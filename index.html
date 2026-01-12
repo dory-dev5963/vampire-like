@@ -57,10 +57,32 @@
             <div id="title-screen">
                 <h1 data-i18n="game_title" class="title-logo">Blood Survivor</h1>
                 <div class="title-menu">
-                    <button class="menu-btn primary" onclick="goToCharacterSelect()" data-i18n="start_game">START
+                    <button class="menu-btn primary" onclick="goToStageSelect()" data-i18n="start_game">START
                         GAME</button>
                     <button class="menu-btn" onclick="toggleLibrary()" data-i18n="library">Library</button>
                     <button class="menu-btn" onclick="toggleSettings()" data-i18n="settings">Settings</button>
+                </div>
+            </div>
+
+            <!-- Stage Selection Screen -->
+            <div id="stage-select-screen" class="hidden">
+                <h2 data-i18n="select_stage">Select Stage</h2>
+                <div id="stage-cards">
+                    <div class="stage-card easy" onclick="selectStage('forest')">
+                        <div class="stage-icon">🌲</div>
+                        <h3 data-i18n="stage_forest">Mystic Forest</h3>
+                        <p data-i18n="stage_forest_desc">Difficulty: Easy</p>
+                    </div>
+                    <div class="stage-card normal" onclick="selectStage('library')">
+                        <div class="stage-icon">📚</div>
+                        <h3 data-i18n="stage_library">Lost Library</h3>
+                        <p data-i18n="stage_library_desc">Difficulty: Normal</p>
+                    </div>
+                    <div class="stage-card hard" onclick="selectStage('hell')">
+                        <div class="stage-icon">🔥</div>
+                        <h3 data-i18n="stage_hell">Crimson Hell</h3>
+                        <p data-i18n="stage_hell_desc">Difficulty: Hard</p>
+                    </div>
                 </div>
             </div>
 
@@ -97,6 +119,37 @@
                         <img src="assets/lightning.svg" alt="Lightning">
                         <h3 data-i18n="lightning_weapon">Lightning</h3>
                         <p data-i18n="lightning_desc">Chain lightning attack</p>
+                    </button>
+                    <!-- New Weapons -->
+                    <button class="weapon-btn" onclick="startGame('cross')">
+                        <img src="assets/cross_icon.png" alt="Cross">
+                        <h3 data-i18n="cross_weapon">Cross</h3>
+                        <p data-i18n="cross_desc">Boomerang attack</p>
+                    </button>
+                    <button class="weapon-btn" onclick="startGame('axe')">
+                        <img src="assets/axe_icon.png" alt="Axe">
+                        <h3 data-i18n="axe_weapon">Axe</h3>
+                        <p data-i18n="axe_desc">High arc piercing attack</p>
+                    </button>
+                    <button class="weapon-btn" onclick="startGame('whip')">
+                        <img src="assets/whip_icon.png" alt="Whip">
+                        <h3 data-i18n="whip_weapon">Whip</h3>
+                        <p data-i18n="whip_desc">Horizontal sweep with knockback</p>
+                    </button>
+                    <button class="weapon-btn" onclick="startGame('fire_wand')">
+                        <img src="assets/fire_wand_icon.png" alt="Fire Wand">
+                        <h3 data-i18n="fire_wand_weapon">Fire Wand</h3>
+                        <p data-i18n="fire_wand_desc">High damage fireballs</p>
+                    </button>
+                    <button class="weapon-btn" onclick="startGame('mine')">
+                        <img src="assets/holy_water.svg" alt="Mine">
+                        <h3 data-i18n="mine_weapon">Mine</h3>
+                        <p data-i18n="mine_desc">Deploys explosive traps</p>
+                    </button>
+                    <button class="weapon-btn" onclick="startGame('spear')">
+                        <img src="assets/spear_icon.png" alt="Spear">
+                        <h3 data-i18n="spear_weapon">Spear</h3>
+                        <p data-i18n="spear_desc">Pure piercing projectile</p>
                     </button>
                 </div>
             </div>

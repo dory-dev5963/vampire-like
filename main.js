@@ -15,6 +15,12 @@ const ENEMY_TYPES = [
     { color: '#c0392b', speed: 1.5, hp: 2000, radius: 20, damage: 60, exp: 2000 } // 270-300s
 ];
 
+const STAGES = {
+    forest: { id: 'forest', mult: 1.0, bgColor: '#1a2e1a', color: '#2ecc71' },
+    library: { id: 'library', mult: 1.5, bgColor: '#1a1a2e', color: '#3498db' },
+    hell: { id: 'hell', mult: 2.5, bgColor: '#2e1a1a', color: '#e74c3c' }
+};
+
 const CHARACTERS = {
     knight: { hp: 150, armor: 2, magnetRadius: 25, attackDamage: 1.0, attackFrequency: 1.0, moveSpeed: 2.5, attackSpeed: 1.0, projSpeed: 1.0, rerolls: 2, color: '#3498db' },
     rogue: { hp: 70, armor: 0, magnetRadius: 50, attackDamage: 1.0, attackFrequency: 1.1, moveSpeed: 4.0, attackSpeed: 1.2, projSpeed: 1.2, rerolls: 4, color: '#2ecc71' },
@@ -64,7 +70,10 @@ const TRANSLATIONS = {
         char_mage_desc: "High Damage & Cooldown", stat_hp_label: "HP", stat_atk_dmg_label: "Atk Damage", stat_atk_freq_label: "Atk Frequency", stat_move_speed_label: "Move Speed",
         stat_atk_speed_label: "Atk Speed", stat_armor_label: "Armor", stat_magnet_label: "Magnet", rarity_common: "COMMON", rarity_uncommon: "UNCOMMON", rarity_great: "GREAT",
         rarity_legend: "LEGEND", bgm_volume: "BGM Volume", sfx_volume: "SFX Volume", reroll: "Reroll", reroll_remaining: "Remaining: ", start_game: "START GAME",
-        game_title: "BLOOD SURVIVOR", select_weapon: "Select Weapon", choose_start_weapon: "Choose your starting weapon:"
+        game_title: "BLOOD SURVIVOR", select_weapon: "Select Weapon", choose_start_weapon: "Choose your starting weapon:",
+        select_stage: "Select Stage", stage_forest: "Mystic Forest", stage_forest_desc: "Difficulty: Easy", stage_library: "Lost Library", stage_library_desc: "Difficulty: Normal", stage_hell: "Crimson Hell", stage_hell_desc: "Difficulty: Hard",
+        cross_weapon: "Cross", cross_desc: "Boomerang attack", axe_weapon: "Axe", axe_desc: "High arc piercing attack", whip_weapon: "Whip", whip_desc: "Horizontal sweep with knockback",
+        fire_wand_weapon: "Fire Wand", fire_wand_desc: "High damage fireballs", mine_weapon: "Mine", mine_desc: "Deploys explosive traps", spear_weapon: "Spear", spear_desc: "Pure piercing projectile"
     },
     ja: {
         orbit_weapon: "オービット", orbit_desc: "周囲を回転する防御オーブ", wand_weapon: "マジックワンド", wand_desc: "近くの敵を攻撃", aura_weapon: "オーラ", aura_desc: "周囲のエリアにダメージ",
@@ -94,7 +103,10 @@ const TRANSLATIONS = {
         char_mage_desc: "高い攻撃力と攻撃頻度を誇る", stat_hp_label: "HP", stat_atk_dmg_label: "攻撃力", stat_atk_freq_label: "攻撃頻度", stat_move_speed_label: "移動速度",
         stat_atk_speed_label: "攻撃速度", stat_armor_label: "防御", stat_magnet_label: "回収", rarity_common: "コモン", rarity_uncommon: "アンコモン", rarity_great: "グレート",
         rarity_legend: "レジェンド", bgm_volume: "BGM音量", sfx_volume: "SE音量", reroll: "リロール", reroll_remaining: "残り: ", start_game: "ゲーム開始",
-        game_title: "ブラッド・サバイバー", select_weapon: "武器の選択", choose_start_weapon: "最初の武器を選択してください:"
+        game_title: "ブラッド・サバイバー", select_weapon: "武器の選択", choose_start_weapon: "最初の武器を選択してください:",
+        select_stage: "ステージの選択", stage_forest: "神秘の森", stage_forest_desc: "難易度: イージー", stage_library: "失われた図書館", stage_library_desc: "難易度: ノーマル", stage_hell: "紅蓮の地獄", stage_hell_desc: "難易度: ハード",
+        cross_weapon: "十字架", cross_desc: "ブーメラン攻撃", axe_weapon: "手斧", axe_desc: "放物線を描く貫通攻撃", whip_weapon: "ムチ", whip_desc: "水平方向へのなぎ払い攻撃",
+        fire_wand_weapon: "ファイアワンド", fire_wand_desc: "高火力の火球攻撃", mine_weapon: "地雷", mine_desc: "接触で爆発する罠を設置", spear_weapon: "槍", spear_desc: "敵を貫通する直線攻撃"
     }
 };
 
@@ -154,7 +166,8 @@ class Enemy {
         else if (side === 1) { this.x = GAME_WIDTH + 20; this.y = Math.random() * GAME_HEIGHT; }
         else if (side === 2) { this.x = Math.random() * GAME_WIDTH; this.y = GAME_HEIGHT + 20; }
         else { this.x = -20; this.y = Math.random() * GAME_HEIGHT; }
-        this.radius = type.radius; this.speed = type.speed + Math.random() * 0.3; this.hp = type.hp; this.damage = type.damage; this.color = type.color; this.exp = type.exp || 5;
+        const mult = (gameState.selectedStage ? STAGES[gameState.selectedStage].mult : 1.0);
+        this.radius = type.radius; this.speed = type.speed + Math.random() * 0.3; this.hp = type.hp * mult; this.damage = type.damage * mult; this.color = type.color; this.exp = type.exp || 5;
     }
     update(target) {
         const dx = target.x - this.x; const dy = target.y - this.y; const dist = Math.sqrt(dx * dx + dy * dy);
@@ -223,7 +236,13 @@ const WEAPON_UPGRADES = {
         { level: 4, upgrades: [{ type: 'count', val: 1, descKey: 'upgrade_amount' }] },
         { level: 5, upgrades: [{ type: 'passive_area', val: 0.3, descKey: 'upgrade_area' }] },
         { level: 6, upgrades: [{ type: 'count', val: 3, descKey: 'upgrade_amount' }] },
-    ]
+    ],
+    cross: [{ level: 2, upgrades: [{ type: 'count', val: 1, descKey: 'upgrade_amount' }] }, { level: 3, upgrades: [{ type: 'passive_speed', val: 0.2, descKey: 'upgrade_speed' }] }, { level: 4, upgrades: [{ type: 'passive_damage', val: 5, descKey: 'upgrade_damage_flat' }] }, { level: 5, upgrades: [{ type: 'count', val: 1, descKey: 'upgrade_amount' }] }, { level: 6, upgrades: [{ type: 'passive_damage', val: 10, descKey: 'upgrade_damage_flat' }] }],
+    axe: [{ level: 2, upgrades: [{ type: 'count', val: 1, descKey: 'upgrade_amount' }] }, { level: 3, upgrades: [{ type: 'passive_damage', val: 10, descKey: 'upgrade_damage_flat' }] }, { level: 4, upgrades: [{ type: 'passive_area', val: 0.2, descKey: 'upgrade_area' }] }, { level: 5, upgrades: [{ type: 'count', val: 1, descKey: 'upgrade_amount' }] }, { level: 6, upgrades: [{ type: 'passive_damage', val: 20, descKey: 'upgrade_damage_flat' }] }],
+    whip: [{ level: 2, upgrades: [{ type: 'passive_area', val: 0.2, descKey: 'upgrade_area' }] }, { level: 3, upgrades: [{ type: 'passive_damage', val: 5, descKey: 'upgrade_damage_flat' }] }, { level: 4, upgrades: [{ type: 'passive_area', val: 0.2, descKey: 'upgrade_area' }] }, { level: 5, upgrades: [{ type: 'passive_damage', val: 10, descKey: 'upgrade_damage_flat' }] }, { level: 6, upgrades: [{ type: 'passive_area', val: 0.4, descKey: 'upgrade_area' }] }],
+    fire_wand: [{ level: 2, upgrades: [{ type: 'passive_damage', val: 20, descKey: 'upgrade_damage_flat' }] }, { level: 3, upgrades: [{ type: 'passive_speed', val: 0.2, descKey: 'upgrade_speed' }] }, { level: 4, upgrades: [{ type: 'count', val: 1, descKey: 'upgrade_amount' }] }, { level: 5, upgrades: [{ type: 'passive_damage', val: 40, descKey: 'upgrade_damage_flat' }] }, { level: 6, upgrades: [{ type: 'count', val: 2, descKey: 'upgrade_amount' }] }],
+    mine: [{ level: 2, upgrades: [{ type: 'count', val: 1, descKey: 'upgrade_amount' }] }, { level: 3, upgrades: [{ type: 'passive_area', val: 0.3, descKey: 'upgrade_area' }] }, { level: 4, upgrades: [{ type: 'passive_damage', val: 10, descKey: 'upgrade_damage_flat' }] }, { level: 5, upgrades: [{ type: 'count', val: 1, descKey: 'upgrade_amount' }] }, { level: 6, upgrades: [{ type: 'passive_area', val: 0.5, descKey: 'upgrade_area' }] }],
+    spear: [{ level: 2, upgrades: [{ type: 'count', val: 1, descKey: 'upgrade_amount' }] }, { level: 3, upgrades: [{ type: 'passive_damage', val: 10, descKey: 'upgrade_damage_flat' }] }, { level: 4, upgrades: [{ type: 'passive_proj_speed', val: 0.2, descKey: 'upgrade_speed' }] }, { level: 5, upgrades: [{ type: 'count', val: 1, descKey: 'upgrade_amount' }] }, { level: 6, upgrades: [{ type: 'passive_damage', val: 20, descKey: 'upgrade_damage_flat' }] }]
 };
 
 const SKILL_UPGRADES = {
@@ -241,7 +260,7 @@ const SKILL_UPGRADES = {
     spellbinder: [{ level: 2, upgrades: [{ type: 'passive_duration', val: 0.1, descKey: 'skill_spellbinder_up' }] }, { level: 3, upgrades: [{ type: 'passive_duration', val: 0.1, descKey: 'skill_spellbinder_up' }] }, { level: 4, upgrades: [{ type: 'passive_duration', val: 0.1, descKey: 'skill_spellbinder_up' }] }, { level: 5, upgrades: [{ type: 'passive_duration', val: 0.1, descKey: 'skill_spellbinder_up' }] }, { level: 6, upgrades: [{ type: 'passive_duration', val: 0.1, descKey: 'skill_spellbinder_up' }] }]
 };
 
-const ALL_WEAPON_TYPES = ['orbit', 'wand', 'aura', 'knife', 'holy_water', 'lightning'];
+const ALL_WEAPON_TYPES = ['orbit', 'wand', 'aura', 'knife', 'holy_water', 'lightning', 'cross', 'axe', 'whip', 'fire_wand', 'mine', 'spear'];
 const ALL_SKILL_TYPES = ['muscle', 'heart', 'tome', 'scope', 'duplicator', 'magnet', 'wings', 'crown', 'armor', 'pummarola', 'bracer', 'spellbinder'];
 
 function applyUpgrade(weapon, upgradeInfo) {
@@ -360,10 +379,75 @@ class LightningWeapon {
     upgrade(custom) { if (this.level >= this.maxLevel) return; this.level++; (custom || WEAPON_UPGRADES[this.type].find(u => u.level === this.level)?.upgrades || []).forEach(u => applyUpgrade(this, u)); }
 }
 
+class CrossWeapon {
+    constructor(owner) { this.owner = owner; this.cooldown = 80; this.timer = 0; this.projectileSpeed = 8; this.projectileSize = 8; this.damage = 15; this.type = 'cross'; this.level = 1; this.maxLevel = 6; this.projectiles = []; }
+    update() { this.timer++; const effective = this.cooldown / (this.owner.attackFrequency * this.owner.attackSpeed * this.owner.cooldownMult); if (this.timer >= effective) { this.timer = 0; this.fire(); } for (let i = this.projectiles.length - 1; i >= 0; i--) { const p = this.projectiles[i]; if (!p.returning) { p.x += p.dx; p.y += p.dy; p.life--; if (p.life <= 0) p.returning = true; } else { const dx = this.owner.x - p.x; const dy = this.owner.y - p.y; const d = Math.hypot(dx, dy); if (d < 10) this.projectiles.splice(i, 1); else { p.x += (dx / d) * (this.projectileSpeed * 1.5); p.y += (dy / d) * (this.projectileSpeed * 1.5); } } } }
+    fire() { const total = 1 + this.owner.projectileCountBonus; for (let i = 0; i < total; i++) { const angle = (i * Math.PI * 2) / total; this.projectiles.push({ x: this.owner.x, y: this.owner.y, dx: Math.cos(angle) * this.projectileSpeed * this.owner.projectileSpeedMult, dy: Math.sin(angle) * this.projectileSpeed * this.owner.projectileSpeedMult, radius: this.projectileSize, damage: this.damage * this.owner.damageMult, returning: false, life: 60 }); } }
+    draw(ctx) { ctx.fillStyle = '#f1c40f'; this.projectiles.forEach(p => { ctx.beginPath(); ctx.arc(p.x, p.y, p.radius, 0, Math.PI * 2); ctx.fill(); }); }
+    getHitboxes() { return this.projectiles; }
+    upgrade(custom) { if (this.level >= this.maxLevel) return; this.level++; (custom || WEAPON_UPGRADES[this.type].find(u => u.level === this.level)?.upgrades || []).forEach(u => applyUpgrade(this, u)); }
+}
+
+class AxeWeapon {
+    constructor(owner) { this.owner = owner; this.cooldown = 100; this.timer = 0; this.projectileSpeed = 10; this.projectileSize = 10; this.damage = 25; this.type = 'axe'; this.level = 1; this.maxLevel = 6; this.projectiles = []; }
+    update() { this.timer++; const effective = this.cooldown / (this.owner.attackFrequency * this.owner.attackSpeed * this.owner.cooldownMult); if (this.timer >= effective) { this.timer = 0; this.fire(); } for (let i = this.projectiles.length - 1; i >= 0; i--) { const p = this.projectiles[i]; p.x += p.dx; p.y += p.dy; p.dy += 0.2; if (p.y > GAME_HEIGHT + 50) this.projectiles.splice(i, 1); } }
+    fire() { const total = 1 + this.owner.projectileCountBonus; for (let i = 0; i < total; i++) { this.projectiles.push({ x: this.owner.x, y: this.owner.y, dx: (Math.random() - 0.5) * 10, dy: -12, radius: this.projectileSize, damage: this.damage * this.owner.damageMult }); } }
+    draw(ctx) { ctx.fillStyle = '#95a5a6'; this.projectiles.forEach(p => { ctx.beginPath(); ctx.arc(p.x, p.y, p.radius, 0, Math.PI * 2); ctx.fill(); }); }
+    getHitboxes() { return this.projectiles; }
+    upgrade(custom) { if (this.level >= this.maxLevel) return; this.level++; (custom || WEAPON_UPGRADES[this.type].find(u => u.level === this.level)?.upgrades || []).forEach(u => applyUpgrade(this, u)); }
+}
+
+class WhipWeapon {
+    constructor(owner) { this.owner = owner; this.cooldown = 60; this.timer = 0; this.range = 100; this.height = 30; this.damage = 15; this.type = 'whip'; this.level = 1; this.maxLevel = 6; this.activeTime = 0; this.direction = 1; }
+    update() { this.timer++; const effective = this.cooldown / (this.owner.attackFrequency * this.owner.attackSpeed * this.owner.cooldownMult); if (this.timer >= effective) { this.timer = 0; this.activeTime = 10; this.direction = (Math.random() > 0.5 ? 1 : -1); audioManager.playSFX('hit'); } if (this.activeTime > 0) this.activeTime--; }
+    draw(ctx) { if (this.activeTime > 0) { ctx.fillStyle = 'rgba(255, 255, 255, 0.6)'; const w = this.range * this.owner.areaMult; const h = this.height * this.owner.areaMult; ctx.fillRect(this.owner.x + (this.direction === 1 ? 0 : -w), this.owner.y - h / 2, w, h); } }
+    getHitboxes() { if (this.activeTime <= 0) return []; const w = this.range * this.owner.areaMult; const h = this.height * this.owner.areaMult; return [{ x: this.owner.x + (this.direction === 1 ? w / 2 : -w / 2), y: this.owner.y, width: w, height: h, damage: this.damage * this.owner.damageMult, isRect: true }]; }
+    upgrade(custom) { if (this.level >= this.maxLevel) return; this.level++; (custom || WEAPON_UPGRADES[this.type].find(u => u.level === this.level)?.upgrades || []).forEach(u => applyUpgrade(this, u)); }
+}
+
+class MineWeapon {
+    constructor(owner) { this.owner = owner; this.cooldown = 120; this.timer = 0; this.radius = 40; this.damage = 30; this.type = 'mine'; this.level = 1; this.maxLevel = 6; this.mines = []; }
+    update() { this.timer++; const effective = this.cooldown / (this.owner.attackFrequency * this.owner.attackSpeed * this.owner.cooldownMult); if (this.timer >= effective) { this.timer = 0; this.fire(); } for (let i = this.mines.length - 1; i >= 0; i--) { const m = this.mines[i]; if (m.exploded) { m.life--; if (m.life <= 0) this.mines.splice(i, 1); } } }
+    fire() { const total = 1 + this.owner.projectileCountBonus; for (let i = 0; i < total; i++) { this.mines.push({ x: this.owner.x, y: this.owner.y, radius: 20, explodeRadius: this.radius * this.owner.areaMult, damage: this.damage * this.owner.damageMult, exploded: false, life: 30 }); } }
+    draw(ctx) { this.mines.forEach(m => { if (!m.exploded) { ctx.fillStyle = '#e74c3c'; ctx.beginPath(); ctx.arc(m.x, m.y, 8, 0, Math.PI * 2); ctx.fill(); ctx.strokeStyle = 'white'; ctx.stroke(); } else { ctx.fillStyle = 'rgba(231, 76, 60, 0.4)'; ctx.beginPath(); ctx.arc(m.x, m.y, m.explodeRadius, 0, Math.PI * 2); ctx.fill(); } }); }
+    getHitboxes() {
+        const hits = [];
+        this.mines.forEach(m => {
+            if (!m.exploded) {
+                gameState.enemies.forEach(e => {
+                    if (Math.hypot(m.x - e.x, m.y - e.y) < m.radius + e.radius) { m.exploded = true; audioManager.playSFX('hit'); }
+                });
+            } else if (m.life === 30) { hits.push({ x: m.x, y: m.y, radius: m.explodeRadius, damage: m.damage }); }
+        });
+        return hits;
+    }
+    upgrade(custom) { if (this.level >= this.maxLevel) return; this.level++; (custom || WEAPON_UPGRADES[this.type].find(u => u.level === this.level)?.upgrades || []).forEach(u => applyUpgrade(this, u)); }
+}
+
+class SpearWeapon {
+    constructor(owner) { this.owner = owner; this.cooldown = 80; this.timer = 0; this.projectileSpeed = 12; this.projectileSize = 4; this.damage = 20; this.type = 'spear'; this.level = 1; this.maxLevel = 6; this.projectiles = []; }
+    update() { this.timer++; const effective = this.cooldown / (this.owner.attackFrequency * this.owner.attackSpeed * this.owner.cooldownMult); if (this.timer >= effective) { this.timer = 0; this.fire(); } for (let i = this.projectiles.length - 1; i >= 0; i--) { const p = this.projectiles[i]; p.x += p.dx; p.y += p.dy; if (p.x < -100 || p.x > GAME_WIDTH + 100 || p.y < -100 || p.y > GAME_HEIGHT + 100) this.projectiles.splice(i, 1); } }
+    fire() {
+        const total = 1 + this.owner.projectileCountBonus;
+        let target = null; let minDist = Infinity;
+        gameState.enemies.forEach(e => { const d = Math.hypot(e.x - this.owner.x, e.y - this.owner.y); if (d < minDist) { minDist = d; target = e; } });
+        const angle = target ? Math.atan2(target.y - this.owner.y, target.x - this.owner.x) : 0;
+        for (let i = 0; i < total; i++) {
+            const offset = (i - (total - 1) / 2) * 15;
+            this.projectiles.push({ x: this.owner.x, y: this.owner.y, dx: Math.cos(angle) * this.projectileSpeed * this.owner.projectileSpeedMult, dy: Math.sin(angle) * this.projectileSpeed * this.owner.projectileSpeedMult, radius: this.projectileSize, damage: this.damage * this.owner.damageMult });
+        }
+    }
+    draw(ctx) { ctx.fillStyle = '#ecf0f1'; this.projectiles.forEach(p => { ctx.beginPath(); ctx.arc(p.x, p.y, p.radius * 2, 0, Math.PI * 2); ctx.fill(); }); }
+    getHitboxes() { return this.projectiles; }
+    upgrade(custom) { if (this.level >= this.maxLevel) return; this.level++; (custom || WEAPON_UPGRADES[this.type].find(u => u.level === this.level)?.upgrades || []).forEach(u => applyUpgrade(this, u)); }
+}
+
 function createWeapon(type, owner) {
     switch (type) {
         case 'orbit': return new OrbitWeapon(owner); case 'wand': return new WandWeapon(owner); case 'aura': return new AuraWeapon(owner);
         case 'knife': return new KnifeWeapon(owner); case 'holy_water': return new HolyWaterWeapon(owner); case 'lightning': return new LightningWeapon(owner);
+        case 'cross': return new CrossWeapon(owner); case 'axe': return new AxeWeapon(owner); case 'whip': return new WhipWeapon(owner);
+        case 'fire_wand': return new FireWandWeapon(owner); case 'mine': return new MineWeapon(owner); case 'spear': return new SpearWeapon(owner);
     }
     return null;
 }
@@ -429,7 +513,7 @@ class Player {
 }
 
 // --- GAME STATE & ENGINE ---
-const gameState = { player: null, enemies: [], expOrbs: [], projectiles: [], damageNumbers: [], showDamageNumbers: true, isPaused: false, selectedCharacter: 'knight' };
+const gameState = { player: null, enemies: [], expOrbs: [], projectiles: [], damageNumbers: [], showDamageNumbers: true, isPaused: false, selectedCharacter: 'knight', selectedStage: 'forest' };
 const canvas = document.getElementById('gameCanvas'); const ctx = canvas.getContext('2d');
 let gameTime = 0, lastTime = 0, nextSpawnTime = 0, loopRunning = false;
 const keys = { w: false, s: false, a: false, d: false, ArrowUp: false, ArrowDown: false, ArrowLeft: false, ArrowRight: false };
@@ -504,7 +588,15 @@ function checkCollisions() {
     const p = gameState.player; if (!p) return;
     for (let i = gameState.enemies.length - 1; i >= 0; i--) {
         const e = gameState.enemies[i]; if (Math.hypot(p.x - e.x, p.y - e.y) < p.radius + e.radius) p.takeDamage(e.damage, audioManager, endGame);
-        p.weapons.forEach(w => w.getHitboxes().forEach(h => { if (Math.hypot(h.x - e.x, h.y - e.y) < h.radius + e.radius) { const d = h.damage || w.damage * p.damageMult; e.hp -= d; audioManager.playSFX('hit'); if (gameState.showDamageNumbers) gameState.damageNumbers.push(new DamageNumber(e.x, e.y, d)); } }));
+        p.weapons.forEach(w => w.getHitboxes().forEach(h => {
+            let hit = false;
+            if (h.isRect) {
+                if (e.x + e.radius > h.x - h.width / 2 && e.x - e.radius < h.x + h.width / 2 && e.y + e.radius > h.y - h.height / 2 && e.y - e.radius < h.y + h.height / 2) hit = true;
+            } else {
+                if (Math.hypot(h.x - e.x, h.y - e.y) < h.radius + e.radius) hit = true;
+            }
+            if (hit) { const d = h.damage || w.damage * p.damageMult; e.hp -= d; audioManager.playSFX('hit'); if (gameState.showDamageNumbers) gameState.damageNumbers.push(new DamageNumber(e.x, e.y, d)); }
+        }));
         if (e.hp <= 0) { gameState.expOrbs.push(new ExpOrb(e.x, e.y, e.exp)); gameState.enemies.splice(i, 1); }
     }
     for (let i = gameState.expOrbs.length - 1; i >= 0; i--) {
@@ -518,13 +610,23 @@ function loop(timestamp) {
     if (!loopRunning) return; if (gameState.isPaused) { lastTime = timestamp; requestAnimationFrame(loop); return; }
     const dt = (timestamp - lastTime) / 1000; lastTime = timestamp; gameTime += dt;
     if (gameTime > nextSpawnTime) { if (gameTime >= 300) { endGame(); return; } spawnEnemy(); nextSpawnTime = gameTime + Math.max(0.2, 2.0 - (gameTime / 60)); }
-    ctx.clearRect(0, 0, canvas.width, canvas.height); const p = gameState.player; p.update(keys); p.draw(ctx);
+    ctx.fillStyle = STAGES[gameState.selectedStage].bgColor; ctx.fillRect(0, 0, canvas.width, canvas.height); const p = gameState.player; p.update(keys); p.draw(ctx);
     gameState.enemies.forEach(e => { e.update(p); e.draw(ctx); }); gameState.expOrbs.forEach(o => o.draw(ctx));
     gameState.damageNumbers.forEach((d, i) => { d.update(); d.draw(ctx); if (d.life <= 0) gameState.damageNumbers.splice(i, 1); });
     checkCollisions(); updateUI(); requestAnimationFrame(loop);
 }
 
 // --- GLOBAL ATTACHMENTS ---
+window.goToStageSelect = () => {
+    document.getElementById('title-screen').classList.add('hidden');
+    document.getElementById('stage-select-screen').classList.remove('hidden');
+    audioManager.init();
+};
+window.selectStage = (stage) => {
+    gameState.selectedStage = stage;
+    document.getElementById('stage-select-screen').classList.add('hidden');
+    document.getElementById('character-select-screen').classList.remove('hidden');
+};
 window.goToCharacterSelect = () => { document.getElementById('title-screen').classList.add('hidden'); document.getElementById('character-select-screen').classList.remove('hidden'); audioManager.init(); };
 window.selectCharacter = (char) => { gameState.selectedCharacter = char; document.getElementById('character-select-screen').classList.add('hidden'); document.getElementById('start-screen').classList.remove('hidden'); audioManager.startBGM(); };
 window.startGame = (type) => { document.getElementById('start-screen').classList.add('hidden'); gameState.player = new Player(type, gameState.selectedCharacter); gameState.enemies = []; gameState.expOrbs = []; gameState.damageNumbers = []; gameTime = 0; nextSpawnTime = 1; lastTime = performance.now(); loopRunning = true; updateInventory(); requestAnimationFrame(loop); };
