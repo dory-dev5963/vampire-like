@@ -7,6 +7,12 @@ function getIconPath(type, isSkill) {
 }
 const GAME_WIDTH = 800;
 const GAME_HEIGHT = 600;
+const CLEAR_TIME = 300;
+function formatTime(s) {
+    const mins = Math.floor(s / 60);
+    const secs = Math.floor(s % 60);
+    return mins.toString().padStart(2, '0') + ':' + secs.toString().padStart(2, '0');
+}
 
 const ENEMY_TYPES = [
     { color: '#e74c3c', speed: 1.0, hp: 10, radius: 12, damage: 5, exp: 5 },    // 0-30s
@@ -718,7 +724,8 @@ window.addEventListener('keyup', e => { if (keys.hasOwnProperty(e.key)) keys[e.k
 
 function updateUI() {
     if (!gameState.player) return;
-    document.getElementById('time').innerText = t('time') + Math.floor(gameTime);
+    const timeLeft = Math.max(0, CLEAR_TIME - gameTime);
+    document.getElementById('time').innerText = t('time') + formatTime(timeLeft);
     document.getElementById('level').innerText = t('level') + gameState.player.level;
     document.getElementById('hp-bar-fill').style.width = Math.max(0, (gameState.player.hp / gameState.player.maxHp) * 100) + '%';
     document.getElementById('hp-text').innerText = Math.floor(gameState.player.hp) + '/' + Math.floor(gameState.player.maxHp);
@@ -815,12 +822,23 @@ function checkCollisions() {
     }
 }
 
-function endGame() { loopRunning = false; audioManager.playSFX('gameover'); document.getElementById('game-over-modal').classList.remove('hidden'); document.getElementById('final-time').innerText = Math.floor(gameTime); }
+function endGame() {
+    loopRunning = false; audioManager.playSFX('gameover');
+    document.getElementById('game-over-modal').classList.remove('hidden');
+    document.getElementById('final-time').innerText = formatTime(gameTime);
+
+    // Save best time
+    const stage = gameState.selectedStage;
+    const currentBest = parseFloat(localStorage.getItem('best_time_' + stage) || 0);
+    if (gameTime > currentBest) {
+        localStorage.setItem('best_time_' + stage, gameTime);
+    }
+}
 
 function loop(timestamp) {
     if (!loopRunning) return; if (gameState.isPaused) { lastTime = timestamp; requestAnimationFrame(loop); return; }
     const dt = (timestamp - lastTime) / 1000; lastTime = timestamp; gameTime += dt;
-    if (gameTime > nextSpawnTime) { if (gameTime >= 300) { endGame(); return; } spawnEnemy(); nextSpawnTime = gameTime + Math.max(0.2, 2.0 - (gameTime / 60)); }
+    if (gameTime > nextSpawnTime) { if (gameTime >= CLEAR_TIME) { endGame(); return; } spawnEnemy(); nextSpawnTime = gameTime + Math.max(0.2, 2.0 - (gameTime / 60)); }
     ctx.fillStyle = STAGES[gameState.selectedStage].bgColor; ctx.fillRect(0, 0, canvas.width, canvas.height); const p = gameState.player; p.update(keys); p.draw(ctx);
     gameState.enemies.forEach(e => { e.update(p); e.draw(ctx); });
     gameState.expOrbs.forEach(o => o.draw(ctx));
@@ -834,6 +852,15 @@ window.goToStageSelect = () => {
     document.getElementById('title-screen').classList.add('hidden');
     document.getElementById('stage-select-screen').classList.remove('hidden');
     audioManager.init();
+
+    // Update best times in character cards
+    ['forest', 'library', 'hell'].forEach(stage => {
+        const best = localStorage.getItem('best_time_' + stage);
+        const el = document.getElementById('best-time-' + stage);
+        if (el) {
+            el.innerText = 'Best: ' + (best ? formatTime(parseFloat(best)) : '--:--');
+        }
+    });
 };
 window.selectStage = (stage) => {
     gameState.selectedStage = stage;

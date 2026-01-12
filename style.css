@@ -689,6 +689,14 @@ button:hover {
     margin: 0;
 }
 
+.best-time {
+    font-size: 12px;
+    color: #f1c40f;
+    margin-top: 10px;
+    font-weight: bold;
+    text-shadow: 0 2px 4px rgba(0, 0, 0, 0.5);
+}
+
 /* Volume Controls */
 .volume-controls {
     margin-top: 20px;
