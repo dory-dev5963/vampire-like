@@ -121,8 +121,8 @@ body.settings-active #bottom-bars {
 }
 
 .inv-icon {
-    width: 40px;
-    height: 40px;
+    width: 32px;
+    height: 32px;
     background: rgba(0, 0, 0, 0.5);
     border: 2px solid #555;
     border-radius: 4px;

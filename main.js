@@ -1,4 +1,10 @@
 // --- CONSTANTS & CONFIG ---
+const PNG_ICONS = ['cross', 'axe', 'whip', 'fire_wand', 'spear'];
+function getIconPath(type, isSkill) {
+    if (isSkill) return 'assets/' + type + '.svg';
+    if (PNG_ICONS.includes(type)) return 'assets/' + type + '_icon.png';
+    return 'assets/' + type + '.svg';
+}
 const GAME_WIDTH = 800;
 const GAME_HEIGHT = 600;
 
@@ -647,8 +653,8 @@ class Player {
         this.x = GAME_WIDTH / 2; this.y = GAME_HEIGHT / 2; this.radius = 10;
         this.moveSpeed = char.moveSpeed; this.hp = char.hp; this.maxHp = char.hp;
         this.level = 1; this.exp = 0; this.nextLevelExp = 10; this.magnetRadius = char.magnetRadius;
-        this.weapons = [createWeapon(weaponType, this)]; this.maxWeapons = 3;
-        this.color = char.color; this.charType = charKey; this.skills = []; this.maxSkills = 3;
+        this.weapons = [createWeapon(weaponType, this)]; this.maxWeapons = 6;
+        this.color = char.color; this.charType = charKey; this.skills = []; this.maxSkills = 6;
         this.damageMult = char.attackDamage; this.areaMult = 1.0; this.cooldownMult = 1.0;
         this.projectileCountBonus = 0; this.moveSpeedMult = 1.0; this.expMult = 1.0;
         this.armor = char.armor; this.regenAmount = 0; this.regenTimer = 0;
@@ -726,7 +732,7 @@ function updateInventory() {
         const row = document.createElement('div'); row.className = 'inv-row';
         items.forEach(item => {
             const container = document.createElement('div'); container.style.position = 'relative';
-            const img = document.createElement('img'); img.src = 'assets/' + item.type + '.svg'; img.className = 'inv-icon';
+            const img = document.createElement('img'); img.src = getIconPath(item.type, prefix === 'skill_'); img.className = 'inv-icon';
             img.title = (prefix === 'skill_' ? t(prefix + item.type) : t(item.type + '_weapon')) || item.type;
             const badge = document.createElement('div'); badge.className = 'level-badge'; badge.innerText = 'Lv.' + item.level;
             container.appendChild(img); container.appendChild(badge); row.appendChild(container);
@@ -759,10 +765,10 @@ function showLevelUpMenu() {
     const scale = (upgrades, rarity) => upgrades.map(u => ({ ...u, val: (['count', 'passive_amount', 'passive_armor'].includes(u.type) ? Math.ceil(u.val * rarity.mult) : u.val * rarity.mult) }));
     const getDesc = (upgrades) => upgrades.map(u => t(u.descKey) + ' (' + (['count', 'passive_amount', 'passive_armor'].includes(u.type) ? '+' + u.val : 'x' + (u.val > 0 ? (1 + u.val).toFixed(2) : (1 - u.val).toFixed(2))) + ')').join(', ');
 
-    p.skills.forEach(s => { if (s.level < s.maxLevel) { const next = SKILL_UPGRADES[s.type].find(u => u.level === s.level + 1); if (next) { const r = getRandomRarity(false); const sc = scale(next.upgrades, r); options.push({ cat: 'label_skill', r, isNew: false, name: t('upgrade') + ' ' + t('skill_' + s.type) + ' (Lv ' + s.level + '->' + (s.level + 1) + '): ' + getDesc(sc), icon: 'assets/' + s.type + '.svg', action: () => { p.upgradeSkill(s.type, sc); onChoiceMade(); } }); } } });
-    if (p.skills.length < p.maxSkills) ALL_SKILL_TYPES.filter(type => !p.hasSkill(type)).forEach(type => { const r = getRandomRarity(false); options.push({ cat: 'label_skill', r, isNew: true, name: t('skill_' + type) + ' (' + t('affects') + t(t('scope_' + type)) + '): ' + t('skill_' + type + '_desc'), icon: 'assets/' + type + '.svg', action: () => { p.addSkill(type); onChoiceMade(); } }); });
-    p.weapons.forEach(w => { if (w.level < w.maxLevel) { const next = WEAPON_UPGRADES[w.type].find(u => u.level === w.level + 1); if (next) { const r = getRandomRarity(true); const sc = scale(next.upgrades, r); options.push({ cat: 'label_weapon', r, isNew: false, name: t('upgrade') + ' ' + t(w.type + '_weapon') + ' (Lv ' + w.level + '->' + (w.level + 1) + '): ' + getDesc(sc), icon: 'assets/' + w.type + '.svg', action: () => { w.upgrade(sc); onChoiceMade(); } }); } } });
-    if (p.weapons.length < p.maxWeapons) ALL_WEAPON_TYPES.filter(type => !p.hasWeapon(type)).forEach(type => { const r = getRandomRarity(true); options.push({ cat: 'label_weapon', r, isNew: true, name: t(type + "_weapon"), icon: 'assets/' + type + '.svg', action: () => { p.addWeapon(type); onChoiceMade(); } }); });
+    p.skills.forEach(s => { if (s.level < s.maxLevel) { const next = SKILL_UPGRADES[s.type].find(u => u.level === s.level + 1); if (next) { const r = getRandomRarity(false); const sc = scale(next.upgrades, r); options.push({ cat: 'label_skill', r, isNew: false, name: t('upgrade') + ' ' + t('skill_' + s.type) + ' (Lv ' + s.level + '->' + (s.level + 1) + '): ' + getDesc(sc), icon: getIconPath(s.type, true), action: () => { p.upgradeSkill(s.type, sc); onChoiceMade(); } }); } } });
+    if (p.skills.length < p.maxSkills) ALL_SKILL_TYPES.filter(type => !p.hasSkill(type)).forEach(type => { const r = getRandomRarity(false); options.push({ cat: 'label_skill', r, isNew: true, name: t('skill_' + type) + ' (' + t('affects') + t(t('scope_' + type)) + '): ' + t('skill_' + type + '_desc'), icon: getIconPath(type, true), action: () => { p.addSkill(type); onChoiceMade(); } }); });
+    p.weapons.forEach(w => { if (w.level < w.maxLevel) { const next = WEAPON_UPGRADES[w.type].find(u => u.level === w.level + 1); if (next) { const r = getRandomRarity(true); const sc = scale(next.upgrades, r); options.push({ cat: 'label_weapon', r, isNew: false, name: t('upgrade') + ' ' + t(w.type + '_weapon') + ' (Lv ' + w.level + '->' + (w.level + 1) + '): ' + getDesc(sc), icon: getIconPath(w.type, false), action: () => { w.upgrade(sc); onChoiceMade(); } }); } } });
+    if (p.weapons.length < p.maxWeapons) ALL_WEAPON_TYPES.filter(type => !p.hasWeapon(type)).forEach(type => { const r = getRandomRarity(true); options.push({ cat: 'label_weapon', r, isNew: true, name: t(type + "_weapon"), icon: getIconPath(type, false), action: () => { p.addWeapon(type); onChoiceMade(); } }); });
     if (options.length === 0) options.push({ cat: 'label_skill', r: RARITIES.common, isNew: false, name: t("heal"), icon: "assets/heart.svg", action: () => { p.hp = Math.min(p.maxHp, p.hp + 50); onChoiceMade(); } });
 
     options.sort(() => 0.5 - Math.random()).slice(0, 3).forEach(opt => {
@@ -854,7 +860,7 @@ function updateLibrary() {
         const item = document.createElement('div');
         item.className = 'library-item';
         item.innerHTML = `
-            <img src="assets/${type}.svg" class="lib-icon">
+            <img src="${getIconPath(type, false)}" class="lib-icon">
             <div class="lib-info">
                 <div class="lib-name">${t(type + '_weapon')}</div>
                 <div class="lib-desc">${t(type + '_desc')}</div>
@@ -867,7 +873,7 @@ function updateLibrary() {
         const item = document.createElement('div');
         item.className = 'library-item';
         item.innerHTML = `
-            <img src="assets/${type}.svg" class="lib-icon">
+            <img src="${getIconPath(type, true)}" class="lib-icon">
             <div class="lib-info">
                 <div class="lib-name">${t('skill_' + type)}</div>
                 <div class="lib-desc">${t('skill_' + type + '_desc')}</div>
