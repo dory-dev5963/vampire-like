@@ -1,0 +1,277 @@
+<!DOCTYPE html>
+<html lang="ja">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Vampire Like Game</title>
+    <link rel="stylesheet" href="style.css">
+</head>
+
+<body>
+    <div id="game-container">
+        <canvas id="gameCanvas" width="800" height="600"></canvas>
+        <div id="ui-layer">
+            <div id="hud">
+                <div id="inventory">
+                    <!-- JS will populate img tags here -->
+                </div>
+                <div id="level-time-container">
+                    <div id="level">Level: 1</div>
+                    <div id="time">Time: 00:00</div>
+                </div>
+            </div>
+
+            <div id="bottom-bars">
+                <div class="bar-container">
+                    <div class="bar-label">HP</div>
+                    <div class="bar-track">
+                        <div id="hp-bar-fill" class="bar-fill hp-fill"></div>
+                    </div>
+                    <div id="hp-text" class="bar-value">100/100</div>
+                </div>
+                <div class="bar-container">
+                    <div class="bar-label">EXP</div>
+                    <div class="bar-track">
+                        <div id="exp-bar-fill" class="bar-fill exp-fill"></div>
+                    </div>
+                    <div id="exp-text" class="bar-value">0/10</div>
+                </div>
+            </div>
+            <div id="level-up-modal" class="hidden">
+                <h2>Level Up!</h2>
+                <div id="choices"></div>
+                <div id="reroll-container" class="hidden">
+                    <button id="reroll-btn" onclick="rerollChoices()">
+                        <span data-i18n="reroll">Reroll</span>
+                        (<span data-i18n="reroll_remaining">Remaining: </span><span id="reroll-count">0</span>)
+                    </button>
+                </div>
+            </div>
+            <div id="game-over-modal" class="hidden">
+                <h1 id="game-over-title">GAME OVER</h1>
+                <p id="game-over-desc">You survived for <span id="final-time"></span></p>
+                <button onclick="location.reload()">Retry</button>
+            </div>
+            <!-- Title Screen -->
+            <div id="title-screen">
+                <h1 data-i18n="game_title" class="title-logo">Blood Survivor</h1>
+                <div class="title-menu">
+                    <button class="menu-btn primary" onclick="goToCharacterSelect()" data-i18n="start_game">START
+                        GAME</button>
+                    <button class="menu-btn" onclick="toggleLibrary()" data-i18n="library">Library</button>
+                    <button class="menu-btn" onclick="toggleSettings()" data-i18n="settings">Settings</button>
+                </div>
+            </div>
+
+            <div id="start-screen" class="hidden">
+                <h1 data-i18n="select_weapon">Select Weapon</h1>
+                <p data-i18n="choose_start_weapon">Choose your starting weapon:</p>
+                <div class="weapon-grid">
+                    <button class="weapon-btn" onclick="startGame('orbit')">
+                        <img src="assets/orbit.svg" alt="Orbit">
+                        <h3 data-i18n="orbit_weapon">Orbit</h3>
+                        <p data-i18n="orbit_desc">Rotating defensive orbs</p>
+                    </button>
+                    <button class="weapon-btn" onclick="startGame('wand')">
+                        <img src="assets/wand.svg" alt="Wand">
+                        <h3 data-i18n="wand_weapon">Magic Wand</h3>
+                        <p data-i18n="wand_desc">Shoots nearest enemy</p>
+                    </button>
+                    <button class="weapon-btn" onclick="startGame('aura')">
+                        <img src="assets/aura.svg" alt="Aura">
+                        <h3 data-i18n="aura_weapon">Aura</h3>
+                        <p data-i18n="aura_desc">Damages area around you</p>
+                    </button>
+                    <button class="weapon-btn" onclick="startGame('knife')">
+                        <img src="assets/knife.svg" alt="Knife">
+                        <h3 data-i18n="knife_weapon">Knife</h3>
+                        <p data-i18n="knife_desc">Fast throwing knives</p>
+                    </button>
+                    <button class="weapon-btn" onclick="startGame('holy_water')">
+                        <img src="assets/holy_water.svg" alt="Holy Water">
+                        <h3 data-i18n="holy_water_weapon">Holy Water</h3>
+                        <p data-i18n="holy_water_desc">Burns area on ground</p>
+                    </button>
+                    <button class="weapon-btn" onclick="startGame('lightning')">
+                        <img src="assets/lightning.svg" alt="Lightning">
+                        <h3 data-i18n="lightning_weapon">Lightning</h3>
+                        <p data-i18n="lightning_desc">Chain lightning attack</p>
+                    </button>
+                </div>
+            </div>
+
+            <!-- Character Selection Screen -->
+            <div id="character-select-screen" class="hidden">
+                <h2 data-i18n="select_character">Select Your Character</h2>
+                <div id="character-cards">
+                    <div class="character-card" onclick="selectCharacter('knight')">
+                        <div class="char-icon">🛡️</div>
+                        <h3 data-i18n="char_knight">Knight</h3>
+                        <p data-i18n="char_knight_desc">High HP & Armor</p>
+                        <div class="stat-bars">
+                            <div class="stat-bar-row"><span data-i18n="stat_hp_label">HP</span>
+                                <div class="stat-bar">
+                                    <div class="stat-fill hp" style="width: 90%;"></div>
+                                </div>
+                            </div>
+                            <div class="stat-bar-row"><span data-i18n="stat_atk_dmg_label">Atk Dmg</span>
+                                <div class="stat-bar">
+                                    <div class="stat-fill dmg" style="width: 60%;"></div>
+                                </div>
+                            </div>
+                            <div class="stat-bar-row"><span data-i18n="stat_atk_freq_label">Atk Freq</span>
+                                <div class="stat-bar">
+                                    <div class="stat-fill freq" style="width: 50%;"></div>
+                                </div>
+                            </div>
+                            <div class="stat-bar-row"><span data-i18n="stat_move_speed_label">Mv Speed</span>
+                                <div class="stat-bar">
+                                    <div class="stat-fill move" style="width: 40%;"></div>
+                                </div>
+                            </div>
+                            <div class="stat-bar-row"><span data-i18n="stat_atk_speed_label">Atk Spd</span>
+                                <div class="stat-bar">
+                                    <div class="stat-fill speed" style="width: 50%;"></div>
+                                </div>
+                            </div>
+                            <div class="stat-bar-row"><span data-i18n="stat_armor_label">Armor</span>
+                                <div class="stat-bar">
+                                    <div class="stat-fill armor" style="width: 80%;"></div>
+                                </div>
+                            </div>
+                            <div class="stat-bar-row"><span data-i18n="stat_magnet_label">Magnet</span>
+                                <div class="stat-bar">
+                                    <div class="stat-fill magnet" style="width: 40%;"></div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="character-card" onclick="selectCharacter('rogue')">
+                        <div class="char-icon">🗡️</div>
+                        <h3 data-i18n="char_rogue">Rogue</h3>
+                        <p data-i18n="char_rogue_desc">High Speed & Magnet</p>
+                        <div class="stat-bars">
+                            <div class="stat-bar-row"><span data-i18n="stat_hp_label">HP</span>
+                                <div class="stat-bar">
+                                    <div class="stat-fill hp" style="width: 40%;"></div>
+                                </div>
+                            </div>
+                            <div class="stat-bar-row"><span data-i18n="stat_atk_dmg_label">Atk Dmg</span>
+                                <div class="stat-bar">
+                                    <div class="stat-fill dmg" style="width: 50%;"></div>
+                                </div>
+                            </div>
+                            <div class="stat-bar-row"><span data-i18n="stat_atk_freq_label">Atk Freq</span>
+                                <div class="stat-bar">
+                                    <div class="stat-fill freq" style="width: 70%;"></div>
+                                </div>
+                            </div>
+                            <div class="stat-bar-row"><span data-i18n="stat_move_speed_label">Mv Speed</span>
+                                <div class="stat-bar">
+                                    <div class="stat-fill move" style="width: 100%;"></div>
+                                </div>
+                            </div>
+                            <div class="stat-bar-row"><span data-i18n="stat_atk_speed_label">Atk Spd</span>
+                                <div class="stat-bar">
+                                    <div class="stat-fill speed" style="width: 80%;"></div>
+                                </div>
+                            </div>
+                            <div class="stat-bar-row"><span data-i18n="stat_armor_label">Armor</span>
+                                <div class="stat-bar">
+                                    <div class="stat-fill armor" style="width: 10%;"></div>
+                                </div>
+                            </div>
+                            <div class="stat-bar-row"><span data-i18n="stat_magnet_label">Magnet</span>
+                                <div class="stat-bar">
+                                    <div class="stat-fill magnet" style="width: 100%;"></div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="character-card" onclick="selectCharacter('mage')">
+                        <div class="char-icon">🔮</div>
+                        <h3 data-i18n="char_mage">Mage</h3>
+                        <p data-i18n="char_mage_desc">High Damage & Cooldown</p>
+                        <div class="stat-bars">
+                            <div class="stat-bar-row"><span data-i18n="stat_hp_label">HP</span>
+                                <div class="stat-bar">
+                                    <div class="stat-fill hp" style="width: 50%;"></div>
+                                </div>
+                            </div>
+                            <div class="stat-bar-row"><span data-i18n="stat_atk_dmg_label">Atk Dmg</span>
+                                <div class="stat-bar">
+                                    <div class="stat-fill dmg" style="width: 100%;"></div>
+                                </div>
+                            </div>
+                            <div class="stat-bar-row"><span data-i18n="stat_atk_freq_label">Atk Freq</span>
+                                <div class="stat-bar">
+                                    <div class="stat-fill freq" style="width: 90%;"></div>
+                                </div>
+                            </div>
+                            <div class="stat-bar-row"><span data-i18n="stat_move_speed_label">Mv Speed</span>
+                                <div class="stat-bar">
+                                    <div class="stat-fill move" style="width: 60%;"></div>
+                                </div>
+                            </div>
+                            <div class="stat-bar-row"><span data-i18n="stat_atk_speed_label">Atk Spd</span>
+                                <div class="stat-bar">
+                                    <div class="stat-fill speed" style="width: 40%;"></div>
+                                </div>
+                            </div>
+                            <div class="stat-bar-row"><span data-i18n="stat_armor_label">Armor</span>
+                                <div class="stat-bar">
+                                    <div class="stat-fill armor" style="width: 10%;"></div>
+                                </div>
+                            </div>
+                            <div class="stat-bar-row"><span data-i18n="stat_magnet_label">Magnet</span>
+                                <div class="stat-bar">
+                                    <div class="stat-fill magnet" style="width: 60%;"></div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div id="library-modal" class="hidden">
+        <h2 data-i18n="library">Library</h2>
+        <div class="library-content">
+            <h3 data-i18n="weapons">Weapons</h3>
+            <div id="lib-weapons" class="library-grid"></div>
+            <h3 data-i18n="skills">Skills</h3>
+            <div id="lib-skills" class="library-grid"></div>
+        </div>
+        <button onclick="toggleLibrary()" data-i18n="close" style="margin-top: 15px;">Close</button>
+    </div>
+
+    <div id="settings-modal" class="hidden">
+        <h2 data-i18n="settings">Settings</h2>
+        <p data-i18n="language">Language</p>
+        <button onclick="changeLang('en')">English</button>
+        <button onclick="changeLang('ja')">日本語</button>
+        <br><br>
+        <button id="btn-toggle-dmg" onclick="toggleDamageNumbers()" data-i18n="settings_show_dmg">Show Damage
+            Numbers</button>
+        <div class="volume-controls">
+            <div class="volume-row">
+                <span data-i18n="bgm_volume">BGM Volume</span>
+                <input type="range" id="bgm-slider" min="0" max="100" value="50" oninput="changeBGMVolume(this.value)">
+                <span id="bgm-value">50%</span>
+            </div>
+            <div class="volume-row">
+                <span data-i18n="sfx_volume">SFX Volume</span>
+                <input type="range" id="sfx-slider" min="0" max="100" value="70" oninput="changeSFXVolume(this.value)">
+                <span id="sfx-value">70%</span>
+            </div>
+        </div>
+        <br>
+        <button onclick="toggleSettings()" data-i18n="close">Close</button>
+    </div>
+
+    <script type="module" src="js/game.js"></script>
+</body>
+
+</html>
