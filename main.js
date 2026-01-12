@@ -3,16 +3,16 @@ const GAME_WIDTH = 800;
 const GAME_HEIGHT = 600;
 
 const ENEMY_TYPES = [
-    { color: '#e74c3c', speed: 1.0, hp: 10, radius: 12, damage: 5, exp: 5 },    // 0-30s: Basic Red
-    { color: '#00d2d3', speed: 2.0, hp: 8, radius: 10, damage: 8, exp: 10 },    // 30-60s: Fast Cyan
-    { color: '#10ac84', speed: 0.6, hp: 50, radius: 20, damage: 15, exp: 25 },  // 60-90s: Tank Green
-    { color: '#5f27cd', speed: 1.3, hp: 120, radius: 15, damage: 20, exp: 100 },// 90-120s: Elite Purple
-    { color: '#e67e22', speed: 1.5, hp: 80, radius: 12, damage: 15, exp: 80 },  // 120-150s: Swarm Orange
-    { color: '#2980b9', speed: 1.8, hp: 200, radius: 18, damage: 25, exp: 200 },// 150-180s: Fast Tank Blue
-    { color: '#2c3e50', speed: 0.8, hp: 500, radius: 25, damage: 40, exp: 500 },// 180-210s: High HP Black
-    { color: '#ecf0f1', speed: 2.5, hp: 150, radius: 15, damage: 30, exp: 300 },// 210-240s: Ghost (White)
-    { color: '#8e44ad', speed: 1.0, hp: 1000, radius: 40, damage: 50, exp: 1000 },// 240-270s: Giant Badge
-    { color: '#c0392b', speed: 1.5, hp: 2000, radius: 20, damage: 60, exp: 2000 } // 270-300s: Final Wave
+    { color: '#e74c3c', speed: 1.0, hp: 10, radius: 12, damage: 5, exp: 5 },    // 0-30s
+    { color: '#00d2d3', speed: 2.0, hp: 8, radius: 10, damage: 8, exp: 10 },    // 30-60s
+    { color: '#10ac84', speed: 0.6, hp: 50, radius: 20, damage: 15, exp: 25 },  // 60-90s
+    { color: '#5f27cd', speed: 1.3, hp: 120, radius: 15, damage: 20, exp: 100 },// 90-120s
+    { color: '#e67e22', speed: 1.5, hp: 80, radius: 12, damage: 15, exp: 80 },  // 120-150s Swarm
+    { color: '#2980b9', speed: 1.8, hp: 200, radius: 18, damage: 25, exp: 200 },// 150-180s
+    { color: '#2c3e50', speed: 0.8, hp: 500, radius: 25, damage: 40, exp: 500 },// 180-210s
+    { color: '#ecf0f1', speed: 2.5, hp: 150, radius: 15, damage: 30, exp: 300 },// 210-240s
+    { color: '#8e44ad', speed: 1.0, hp: 1000, radius: 40, damage: 50, exp: 1000 },// 240-270s
+    { color: '#c0392b', speed: 1.5, hp: 2000, radius: 20, damage: 60, exp: 2000 } // 270-300s
 ];
 
 const CHARACTERS = {
@@ -34,8 +34,6 @@ const WEAPON_RARITIES = {
     great: { id: 'great', mult: 2.5, prob: 0.20, color: '#3498db' },
     legend: { id: 'legend', mult: 4.0, prob: 0.10, color: '#f1c40f' }
 };
-
-// ... Rest will follow
 
 const TRANSLATIONS = {
     en: {
@@ -182,7 +180,7 @@ class DamageNumber {
     draw(ctx) { ctx.fillStyle = `rgba(255, ${this.colorStr}, ${this.alpha})`; ctx.font = 'bold 20px sans-serif'; ctx.strokeStyle = `rgba(0, 0, 0, ${this.alpha})`; ctx.lineWidth = 3; ctx.textAlign = 'center'; ctx.strokeText(this.value, this.x, this.y); ctx.fillText(this.value, this.x, this.y); }
 }
 
-// --- WEAPON & SKILL DEFINITIONS ---
+// --- WEAPON UPGRADES ---
 const WEAPON_UPGRADES = {
     orbit: [
         { level: 2, upgrades: [{ type: 'count', val: 1, descKey: 'upgrade_count' }] },
@@ -191,7 +189,6 @@ const WEAPON_UPGRADES = {
         { level: 5, upgrades: [{ type: 'passive_area', val: 0.2, descKey: 'upgrade_area' }] },
         { level: 6, upgrades: [{ type: 'count', val: 2, descKey: 'upgrade_count' }] },
     ],
-    // ... Simplified for space, including all 6 weapon types from Weapons.js
     wand: [
         { level: 2, upgrades: [{ type: 'passive_damage', val: 5, descKey: 'upgrade_damage_flat' }] },
         { level: 3, upgrades: [{ type: 'passive_speed', val: 0.2, descKey: 'upgrade_speed' }] },
@@ -230,90 +227,18 @@ const WEAPON_UPGRADES = {
 };
 
 const SKILL_UPGRADES = {
-    muscle: [
-        { level: 2, upgrades: [{ type: 'passive_damage', val: 0.1, descKey: 'skill_muscle_up' }] },
-        { level: 3, upgrades: [{ type: 'passive_damage', val: 0.1, descKey: 'skill_muscle_up' }] },
-        { level: 4, upgrades: [{ type: 'passive_damage', val: 0.1, descKey: 'skill_muscle_up' }] },
-        { level: 5, upgrades: [{ type: 'passive_damage', val: 0.1, descKey: 'skill_muscle_up' }] },
-        { level: 6, upgrades: [{ type: 'passive_damage', val: 0.1, descKey: 'skill_muscle_up' }] },
-    ],
-    heart: [
-        { level: 2, upgrades: [{ type: 'passive_hp', val: 0.2, descKey: 'skill_heart_up' }] },
-        { level: 3, upgrades: [{ type: 'passive_hp', val: 0.2, descKey: 'skill_heart_up' }] },
-        { level: 4, upgrades: [{ type: 'passive_hp', val: 0.2, descKey: 'skill_heart_up' }] },
-        { level: 5, upgrades: [{ type: 'passive_hp', val: 0.2, descKey: 'skill_heart_up' }] },
-        { level: 6, upgrades: [{ type: 'passive_hp', val: 0.2, descKey: 'skill_heart_up' }] },
-    ],
-    tome: [
-        { level: 2, upgrades: [{ type: 'passive_speed', val: 0.08, descKey: 'skill_tome_up' }] },
-        { level: 3, upgrades: [{ type: 'passive_speed', val: 0.08, descKey: 'skill_tome_up' }] },
-        { level: 4, upgrades: [{ type: 'passive_speed', val: 0.08, descKey: 'skill_tome_up' }] },
-        { level: 5, upgrades: [{ type: 'passive_speed', val: 0.08, descKey: 'skill_tome_up' }] },
-        { level: 6, upgrades: [{ type: 'passive_speed', val: 0.08, descKey: 'skill_tome_up' }] },
-    ],
-    scope: [
-        { level: 2, upgrades: [{ type: 'passive_area', val: 0.1, descKey: 'skill_scope_up' }] },
-        { level: 3, upgrades: [{ type: 'passive_area', val: 0.1, descKey: 'skill_scope_up' }] },
-        { level: 4, upgrades: [{ type: 'passive_area', val: 0.1, descKey: 'skill_scope_up' }] },
-        { level: 5, upgrades: [{ type: 'passive_area', val: 0.1, descKey: 'skill_scope_up' }] },
-        { level: 6, upgrades: [{ type: 'passive_area', val: 0.1, descKey: 'skill_scope_up' }] },
-    ],
-    duplicator: [
-        { level: 2, upgrades: [{ type: 'passive_amount', val: 1, descKey: 'skill_duplicator_up' }] },
-        { level: 3, upgrades: [{ type: 'passive_amount', val: 1, descKey: 'skill_duplicator_up' }] },
-        { level: 4, upgrades: [{ type: 'passive_amount', val: 1, descKey: 'skill_duplicator_up' }] },
-        { level: 5, upgrades: [{ type: 'passive_amount', val: 1, descKey: 'skill_duplicator_up' }] },
-        { level: 6, upgrades: [{ type: 'passive_amount', val: 1, descKey: 'skill_duplicator_up' }] },
-    ],
-    magnet: [
-        { level: 2, upgrades: [{ type: 'passive_magnet', val: 0.2, descKey: 'skill_magnet_up' }] },
-        { level: 3, upgrades: [{ type: 'passive_magnet', val: 0.2, descKey: 'skill_magnet_up' }] },
-        { level: 4, upgrades: [{ type: 'passive_magnet', val: 0.2, descKey: 'skill_magnet_up' }] },
-        { level: 5, upgrades: [{ type: 'passive_magnet', val: 0.2, descKey: 'skill_magnet_up' }] },
-        { level: 6, upgrades: [{ type: 'passive_magnet', val: 0.2, descKey: 'skill_magnet_up' }] },
-    ],
-    wings: [
-        { level: 2, upgrades: [{ type: 'passive_move_speed', val: 0.1, descKey: 'skill_wings_up' }] },
-        { level: 3, upgrades: [{ type: 'passive_move_speed', val: 0.1, descKey: 'skill_wings_up' }] },
-        { level: 4, upgrades: [{ type: 'passive_move_speed', val: 0.1, descKey: 'skill_wings_up' }] },
-        { level: 5, upgrades: [{ type: 'passive_move_speed', val: 0.1, descKey: 'skill_wings_up' }] },
-        { level: 6, upgrades: [{ type: 'passive_move_speed', val: 0.1, descKey: 'skill_wings_up' }] },
-    ],
-    crown: [
-        { level: 2, upgrades: [{ type: 'passive_exp', val: 0.08, descKey: 'skill_crown_up' }] },
-        { level: 3, upgrades: [{ type: 'passive_exp', val: 0.08, descKey: 'skill_crown_up' }] },
-        { level: 4, upgrades: [{ type: 'passive_exp', val: 0.08, descKey: 'skill_crown_up' }] },
-        { level: 5, upgrades: [{ type: 'passive_exp', val: 0.08, descKey: 'skill_crown_up' }] },
-        { level: 6, upgrades: [{ type: 'passive_exp', val: 0.08, descKey: 'skill_crown_up' }] },
-    ],
-    armor: [
-        { level: 2, upgrades: [{ type: 'passive_armor', val: 1, descKey: 'skill_armor_up' }] },
-        { level: 3, upgrades: [{ type: 'passive_armor', val: 1, descKey: 'skill_armor_up' }] },
-        { level: 4, upgrades: [{ type: 'passive_armor', val: 1, descKey: 'skill_armor_up' }] },
-        { level: 5, upgrades: [{ type: 'passive_armor', val: 1, descKey: 'skill_armor_up' }] },
-        { level: 6, upgrades: [{ type: 'passive_armor', val: 1, descKey: 'skill_armor_up' }] },
-    ],
-    pummarola: [
-        { level: 2, upgrades: [{ type: 'passive_regen', val: 0.2, descKey: 'skill_pummarola_up' }] },
-        { level: 3, upgrades: [{ type: 'passive_regen', val: 0.2, descKey: 'skill_pummarola_up' }] },
-        { level: 4, upgrades: [{ type: 'passive_regen', val: 0.2, descKey: 'skill_pummarola_up' }] },
-        { level: 5, upgrades: [{ type: 'passive_regen', val: 0.2, descKey: 'skill_pummarola_up' }] },
-        { level: 6, upgrades: [{ type: 'passive_regen', val: 0.2, descKey: 'skill_pummarola_up' }] },
-    ],
-    bracer: [
-        { level: 2, upgrades: [{ type: 'passive_proj_speed', val: 0.1, descKey: 'skill_bracer_up' }] },
-        { level: 3, upgrades: [{ type: 'passive_proj_speed', val: 0.1, descKey: 'skill_bracer_up' }] },
-        { level: 4, upgrades: [{ type: 'passive_proj_speed', val: 0.1, descKey: 'skill_bracer_up' }] },
-        { level: 5, upgrades: [{ type: 'passive_proj_speed', val: 0.1, descKey: 'skill_bracer_up' }] },
-        { level: 6, upgrades: [{ type: 'passive_proj_speed', val: 0.1, descKey: 'skill_bracer_up' }] },
-    ],
-    spellbinder: [
-        { level: 2, upgrades: [{ type: 'passive_duration', val: 0.1, descKey: 'skill_spellbinder_up' }] },
-        { level: 3, upgrades: [{ type: 'passive_duration', val: 0.1, descKey: 'skill_spellbinder_up' }] },
-        { level: 4, upgrades: [{ type: 'passive_duration', val: 0.1, descKey: 'skill_spellbinder_up' }] },
-        { level: 5, upgrades: [{ type: 'passive_duration', val: 0.1, descKey: 'skill_spellbinder_up' }] },
-        { level: 6, upgrades: [{ type: 'passive_duration', val: 0.1, descKey: 'skill_spellbinder_up' }] },
-    ]
+    muscle: [{ level: 2, upgrades: [{ type: 'passive_damage', val: 0.1, descKey: 'skill_muscle_up' }] }, { level: 3, upgrades: [{ type: 'passive_damage', val: 0.1, descKey: 'skill_muscle_up' }] }, { level: 4, upgrades: [{ type: 'passive_damage', val: 0.1, descKey: 'skill_muscle_up' }] }, { level: 5, upgrades: [{ type: 'passive_damage', val: 0.1, descKey: 'skill_muscle_up' }] }, { level: 6, upgrades: [{ type: 'passive_damage', val: 0.1, descKey: 'skill_muscle_up' }] }],
+    heart: [{ level: 2, upgrades: [{ type: 'passive_hp', val: 0.2, descKey: 'skill_heart_up' }] }, { level: 3, upgrades: [{ type: 'passive_hp', val: 0.2, descKey: 'skill_heart_up' }] }, { level: 4, upgrades: [{ type: 'passive_hp', val: 0.2, descKey: 'skill_heart_up' }] }, { level: 5, upgrades: [{ type: 'passive_hp', val: 0.2, descKey: 'skill_heart_up' }] }, { level: 6, upgrades: [{ type: 'passive_hp', val: 0.2, descKey: 'skill_heart_up' }] }],
+    tome: [{ level: 2, upgrades: [{ type: 'passive_speed', val: 0.08, descKey: 'skill_tome_up' }] }, { level: 3, upgrades: [{ type: 'passive_speed', val: 0.08, descKey: 'skill_tome_up' }] }, { level: 4, upgrades: [{ type: 'passive_speed', val: 0.08, descKey: 'skill_tome_up' }] }, { level: 5, upgrades: [{ type: 'passive_speed', val: 0.08, descKey: 'skill_tome_up' }] }, { level: 6, upgrades: [{ type: 'passive_speed', val: 0.08, descKey: 'skill_tome_up' }] }],
+    scope: [{ level: 2, upgrades: [{ type: 'passive_area', val: 0.1, descKey: 'skill_scope_up' }] }, { level: 3, upgrades: [{ type: 'passive_area', val: 0.1, descKey: 'skill_scope_up' }] }, { level: 4, upgrades: [{ type: 'passive_area', val: 0.1, descKey: 'skill_scope_up' }] }, { level: 5, upgrades: [{ type: 'passive_area', val: 0.1, descKey: 'skill_scope_up' }] }, { level: 6, upgrades: [{ type: 'passive_area', val: 0.1, descKey: 'skill_scope_up' }] }],
+    duplicator: [{ level: 2, upgrades: [{ type: 'passive_amount', val: 1, descKey: 'skill_duplicator_up' }] }, { level: 3, upgrades: [{ type: 'passive_amount', val: 1, descKey: 'skill_duplicator_up' }] }, { level: 4, upgrades: [{ type: 'passive_amount', val: 1, descKey: 'skill_duplicator_up' }] }, { level: 5, upgrades: [{ type: 'passive_amount', val: 1, descKey: 'skill_duplicator_up' }] }, { level: 6, upgrades: [{ type: 'passive_amount', val: 1, descKey: 'skill_duplicator_up' }] }],
+    magnet: [{ level: 2, upgrades: [{ type: 'passive_magnet', val: 0.2, descKey: 'skill_magnet_up' }] }, { level: 3, upgrades: [{ type: 'passive_magnet', val: 0.2, descKey: 'skill_magnet_up' }] }, { level: 4, upgrades: [{ type: 'passive_magnet', val: 0.2, descKey: 'skill_magnet_up' }] }, { level: 5, upgrades: [{ type: 'passive_magnet', val: 0.2, descKey: 'skill_magnet_up' }] }, { level: 6, upgrades: [{ type: 'passive_magnet', val: 0.2, descKey: 'skill_magnet_up' }] }],
+    wings: [{ level: 2, upgrades: [{ type: 'passive_move_speed', val: 0.1, descKey: 'skill_wings_up' }] }, { level: 3, upgrades: [{ type: 'passive_move_speed', val: 0.1, descKey: 'skill_wings_up' }] }, { level: 4, upgrades: [{ type: 'passive_move_speed', val: 0.1, descKey: 'skill_wings_up' }] }, { level: 5, upgrades: [{ type: 'passive_move_speed', val: 0.1, descKey: 'skill_wings_up' }] }, { level: 6, upgrades: [{ type: 'passive_move_speed', val: 0.1, descKey: 'skill_wings_up' }] }],
+    crown: [{ level: 2, upgrades: [{ type: 'passive_exp', val: 0.08, descKey: 'skill_crown_up' }] }, { level: 3, upgrades: [{ type: 'passive_exp', val: 0.08, descKey: 'skill_crown_up' }] }, { level: 4, upgrades: [{ type: 'passive_exp', val: 0.08, descKey: 'skill_crown_up' }] }, { level: 5, upgrades: [{ type: 'passive_exp', val: 0.08, descKey: 'skill_crown_up' }] }, { level: 6, upgrades: [{ type: 'passive_exp', val: 0.08, descKey: 'skill_crown_up' }] }],
+    armor: [{ level: 2, upgrades: [{ type: 'passive_armor', val: 1, descKey: 'skill_armor_up' }] }, { level: 3, upgrades: [{ type: 'passive_armor', val: 1, descKey: 'skill_armor_up' }] }, { level: 4, upgrades: [{ type: 'passive_armor', val: 1, descKey: 'skill_armor_up' }] }, { level: 5, upgrades: [{ type: 'passive_armor', val: 1, descKey: 'skill_armor_up' }] }, { level: 6, upgrades: [{ type: 'passive_armor', val: 1, descKey: 'skill_armor_up' }] }],
+    pummarola: [{ level: 2, upgrades: [{ type: 'passive_regen', val: 0.2, descKey: 'skill_pummarola_up' }] }, { level: 3, upgrades: [{ type: 'passive_regen', val: 0.2, descKey: 'skill_pummarola_up' }] }, { level: 4, upgrades: [{ type: 'passive_regen', val: 0.2, descKey: 'skill_pummarola_up' }] }, { level: 5, upgrades: [{ type: 'passive_regen', val: 0.2, descKey: 'skill_pummarola_up' }] }, { level: 6, upgrades: [{ type: 'passive_regen', val: 0.2, descKey: 'skill_pummarola_up' }] }],
+    bracer: [{ level: 2, upgrades: [{ type: 'passive_proj_speed', val: 0.1, descKey: 'skill_bracer_up' }] }, { level: 3, upgrades: [{ type: 'passive_proj_speed', val: 0.1, descKey: 'skill_bracer_up' }] }, { level: 4, upgrades: [{ type: 'passive_proj_speed', val: 0.1, descKey: 'skill_bracer_up' }] }, { level: 5, upgrades: [{ type: 'passive_proj_speed', val: 0.1, descKey: 'skill_bracer_up' }] }, { level: 6, upgrades: [{ type: 'passive_proj_speed', val: 0.1, descKey: 'skill_bracer_up' }] }],
+    spellbinder: [{ level: 2, upgrades: [{ type: 'passive_duration', val: 0.1, descKey: 'skill_spellbinder_up' }] }, { level: 3, upgrades: [{ type: 'passive_duration', val: 0.1, descKey: 'skill_spellbinder_up' }] }, { level: 4, upgrades: [{ type: 'passive_duration', val: 0.1, descKey: 'skill_spellbinder_up' }] }, { level: 5, upgrades: [{ type: 'passive_duration', val: 0.1, descKey: 'skill_spellbinder_up' }] }, { level: 6, upgrades: [{ type: 'passive_duration', val: 0.1, descKey: 'skill_spellbinder_up' }] }]
 };
 
 const ALL_WEAPON_TYPES = ['orbit', 'wand', 'aura', 'knife', 'holy_water', 'lightning'];
@@ -373,7 +298,7 @@ class HolyWaterWeapon {
     constructor(owner) { this.owner = owner; this.cooldown = 120; this.timer = 0; this.duration = 180; this.radius = 40; this.damage = 10; this.throwSpeed = 8; this.count = 1; this.type = 'holy_water'; this.level = 1; this.maxLevel = 6; this.zones = []; this.projectiles = []; }
     update() { this.timer++; const effective = this.cooldown / (this.owner.attackFrequency * this.owner.attackSpeed * this.owner.cooldownMult); if (this.timer >= effective) { this.timer = 0; this.fire(); } for (let i = this.projectiles.length - 1; i >= 0; i--) { const p = this.projectiles[i]; p.x += p.dx; p.y += p.dy; p.life--; if (p.life <= 0) { this.zones.push({ x: p.x, y: p.y, radius: this.radius * this.owner.areaMult, life: this.duration * this.owner.durationMult, maxLife: this.duration * this.owner.durationMult, damage: this.damage * this.owner.damageMult }); this.projectiles.splice(i, 1); } } for (let i = this.zones.length - 1; i >= 0; i--) { const z = this.zones[i]; z.life--; if (z.life <= 0) this.zones.splice(i, 1); } }
     fire() { const total = this.count + this.owner.projectileCountBonus; for (let i = 0; i < total; i++) { const angle = Math.random() * Math.PI * 2; const dist = 100 + Math.random() * 100; const travelTime = Math.max(5, 30 / this.owner.projectileSpeedMult); this.projectiles.push({ x: this.owner.x, y: this.owner.y, dx: (dist * Math.cos(angle)) / travelTime, dy: (dist * Math.sin(angle)) / travelTime, life: travelTime }); } }
-    draw(ctx) { ctx.fillStyle = '#3498db'; this.projectiles.forEach(p => { ctx.beginPath(); ctx.arc(p.x, p.y, 5, 0, Math.PI * 2); ctx.fill(); }); this.zones.forEach(z => { const alpha = (z.life / z.maxLife) * 0.6; ctx.fillStyle = \`rgba(231, 76, 60, \${alpha})\`; ctx.beginPath(); ctx.arc(z.x, z.y, z.radius, 0, Math.PI * 2); ctx.fill(); }); }
+    draw(ctx) { ctx.fillStyle = '#3498db'; this.projectiles.forEach(p => { ctx.beginPath(); ctx.arc(p.x, p.y, 5, 0, Math.PI * 2); ctx.fill(); }); this.zones.forEach(z => { const alpha = (z.life / z.maxLife) * 0.6; ctx.fillStyle = `rgba(231, 76, 60, ${alpha})`; ctx.beginPath(); ctx.arc(z.x, z.y, z.radius, 0, Math.PI * 2); ctx.fill(); }); }
     getHitboxes() { return this.zones; }
     upgrade(custom) { if (this.level >= this.maxLevel) return; this.level++; (custom || WEAPON_UPGRADES[this.type].find(u => u.level === this.level)?.upgrades || []).forEach(u => applyUpgrade(this, u)); }
 }
@@ -474,12 +399,12 @@ window.addEventListener('keyup', e => { if (keys.hasOwnProperty(e.key)) keys[e.k
 
 function updateUI() {
     if (!gameState.player) return;
-    document.getElementById('time').innerText = \`\${t('time')}\${Math.floor(gameTime)}\`;
-    document.getElementById('level').innerText = \`\${t('level')}\${gameState.player.level}\`;
-    document.getElementById('hp-bar-fill').style.width = \`\${Math.max(0, (gameState.player.hp / gameState.player.maxHp) * 100)}%\`;
-    document.getElementById('hp-text').innerText = \`\${Math.floor(gameState.player.hp)}/\${Math.floor(gameState.player.maxHp)}\`;
-    document.getElementById('exp-bar-fill').style.width = \`\${Math.max(0, (gameState.player.exp / gameState.player.nextLevelExp) * 100)}%\`;
-    document.getElementById('exp-text').innerText = \`\${Math.floor(gameState.player.exp)}/\${gameState.player.nextLevelExp}\`;
+    document.getElementById('time').innerText = t('time') + Math.floor(gameTime);
+    document.getElementById('level').innerText = t('level') + gameState.player.level;
+    document.getElementById('hp-bar-fill').style.width = Math.max(0, (gameState.player.hp / gameState.player.maxHp) * 100) + '%';
+    document.getElementById('hp-text').innerText = Math.floor(gameState.player.hp) + '/' + Math.floor(gameState.player.maxHp);
+    document.getElementById('exp-bar-fill').style.width = Math.max(0, (gameState.player.exp / gameState.player.nextLevelExp) * 100) + '%';
+    document.getElementById('exp-text').innerText = Math.floor(gameState.player.exp) + '/' + gameState.player.nextLevelExp;
 }
 
 function updateInventory() {
@@ -488,9 +413,9 @@ function updateInventory() {
         const row = document.createElement('div'); row.className = 'inv-row';
         items.forEach(item => {
             const container = document.createElement('div'); container.style.position = 'relative';
-            const img = document.createElement('img'); img.src = \`assets/\${item.type}.svg\`; img.className = 'inv-icon';
-            img.title = prefix === 'skill_' ? t(prefix + item.type) : item.type;
-            const badge = document.createElement('div'); badge.className = 'level-badge'; badge.innerText = \`Lv.\${item.level}\`;
+            const img = document.createElement('img'); img.src = 'assets/' + item.type + '.svg'; img.className = 'inv-icon';
+            img.title = (prefix === 'skill_' ? t(prefix + item.type) : t(item.type + '_weapon')) || item.type;
+            const badge = document.createElement('div'); badge.className = 'level-badge'; badge.innerText = 'Lv.' + item.level;
             container.appendChild(img); container.appendChild(badge); row.appendChild(container);
         });
         return row;
@@ -510,20 +435,20 @@ function showLevelUpMenu() {
     choicesDiv.innerHTML = ''; modal.classList.remove('hidden'); const p = gameState.player;
     document.getElementById('reroll-count').innerText = p.rerolls;
     document.getElementById('reroll-btn').disabled = p.rerolls <= 0;
-    
+
     const options = [];
     const scale = (upgrades, rarity) => upgrades.map(u => ({ ...u, val: (['count', 'passive_amount', 'passive_armor'].includes(u.type) ? Math.ceil(u.val * rarity.mult) : u.val * rarity.mult) }));
-    const getDesc = (upgrades) => upgrades.map(u => \`\${t(u.descKey)} (\${['count', 'passive_amount', 'passive_armor'].includes(u.type) ? '+' + u.val : 'x' + (u.val > 0 ? (1 + u.val).toFixed(2) : (1 - u.val).toFixed(2))})\`).join(', ');
+    const getDesc = (upgrades) => upgrades.map(u => t(u.descKey) + ' (' + (['count', 'passive_amount', 'passive_armor'].includes(u.type) ? '+' + u.val : 'x' + (u.val > 0 ? (1 + u.val).toFixed(2) : (1 - u.val).toFixed(2))) + ')').join(', ');
 
-    p.skills.forEach(s => { if (s.level < s.maxLevel) { const next = SKILL_UPGRADES[s.type].find(u => u.level === s.level + 1); if (next) { const r = getRandomRarity(false); const sc = scale(next.upgrades, r); options.push({ cat: 'label_skill', r, name: \`\${t('upgrade')} \${t('skill_' + s.type)} (Lv \${s.level}->\${s.level + 1}): \${getDesc(sc)}\`, icon: \`assets/\${s.type}.svg\`, action: () => { p.upgradeSkill(s.type, sc); onChoiceMade(); } }); } } });
-    if (p.skills.length < p.maxSkills) ALL_SKILL_TYPES.filter(type => !p.hasSkill(type)).forEach(type => { const r = getRandomRarity(false); options.push({ cat: 'label_skill', r, name: \`\${t('skill_' + type)} (\${t('affects')}\${t(t('scope_' + type))}): \${t('skill_' + type + '_desc')}\`, icon: \`assets/\${type}.svg\`, action: () => { p.addSkill(type); onChoiceMade(); } }); });
-    p.weapons.forEach(w => { if (w.level < w.maxLevel) { const next = WEAPON_UPGRADES[w.type].find(u => u.level === w.level + 1); if (next) { const r = getRandomRarity(true); const sc = scale(next.upgrades, r); options.push({ cat: 'label_weapon', r, name: \`\${t('upgrade')} \${t(w.type + '_weapon')} (Lv \${w.level}->\${w.level + 1}): \${getDesc(sc)}\`, icon: \`assets/\${w.type}.svg\`, action: () => { w.upgrade(sc); onChoiceMade(); } }); } } });
-    if (p.weapons.length < p.maxWeapons) ALL_WEAPON_TYPES.filter(type => !p.hasWeapon(type)).forEach(type => { const r = getRandomRarity(true); options.push({ cat: 'label_weapon', r, name: t(type + "_weapon"), icon: \`assets/\${type}.svg\`, action: () => { p.addWeapon(type); onChoiceMade(); } }); });
+    p.skills.forEach(s => { if (s.level < s.maxLevel) { const next = SKILL_UPGRADES[s.type].find(u => u.level === s.level + 1); if (next) { const r = getRandomRarity(false); const sc = scale(next.upgrades, r); options.push({ cat: 'label_skill', r, name: t('upgrade') + ' ' + t('skill_' + s.type) + ' (Lv ' + s.level + '->' + (s.level + 1) + '): ' + getDesc(sc), icon: 'assets/' + s.type + '.svg', action: () => { p.upgradeSkill(s.type, sc); onChoiceMade(); } }); } } });
+    if (p.skills.length < p.maxSkills) ALL_SKILL_TYPES.filter(type => !p.hasSkill(type)).forEach(type => { const r = getRandomRarity(false); options.push({ cat: 'label_skill', r, name: t('skill_' + type) + ' (' + t('affects') + t(t('scope_' + type)) + '): ' + t('skill_' + type + '_desc'), icon: 'assets/' + type + '.svg', action: () => { p.addSkill(type); onChoiceMade(); } }); });
+    p.weapons.forEach(w => { if (w.level < w.maxLevel) { const next = WEAPON_UPGRADES[w.type].find(u => u.level === w.level + 1); if (next) { const r = getRandomRarity(true); const sc = scale(next.upgrades, r); options.push({ cat: 'label_weapon', r, name: t('upgrade') + ' ' + t(w.type + '_weapon') + ' (Lv ' + w.level + '->' + (w.level + 1) + '): ' + getDesc(sc), icon: 'assets/' + w.type + '.svg', action: () => { w.upgrade(sc); onChoiceMade(); } }); } } });
+    if (p.weapons.length < p.maxWeapons) ALL_WEAPON_TYPES.filter(type => !p.hasWeapon(type)).forEach(type => { const r = getRandomRarity(true); options.push({ cat: 'label_weapon', r, name: t(type + "_weapon"), icon: 'assets/' + type + '.svg', action: () => { p.addWeapon(type); onChoiceMade(); } }); });
     if (options.length === 0) options.push({ cat: 'label_skill', r: RARITIES.common, name: t("heal"), icon: "assets/heart.svg", action: () => { p.hp = Math.min(p.maxHp, p.hp + 50); onChoiceMade(); } });
 
     options.sort(() => 0.5 - Math.random()).slice(0, 3).forEach(opt => {
         const btn = document.createElement('div'); btn.className = 'level-up-option'; btn.style.borderColor = opt.r.color;
-        btn.innerHTML = \`<img src="\${opt.icon}"><div style="flex-grow:1"><div style="display:flex; justify-content:space-between;"><span style="font-size:12px;color:#aaa;">\${t(opt.cat)}</span><span style="font-size:10px;font-weight:bold;color:\${opt.r.color}">\${t('rarity_' + opt.r.id)}</span></div><div style="font-weight:bold;margin-top:2px;">\${opt.name}</div></div>\`;
+        btn.innerHTML = '<img src="' + opt.icon + '"><div style="flex-grow:1"><div style="display:flex; justify-content:space-between;"><span style="font-size:12px;color:#aaa;">' + t(opt.cat) + '</span><span style="font-size:10px;font-weight:bold;color:' + opt.r.color + '">' + t('rarity_' + opt.r.id) + '</span></div><div style="font-weight:bold;margin-top:2px;">' + opt.name + '</div></div>';
         btn.onclick = opt.action; choicesDiv.appendChild(btn);
     });
 }
@@ -552,7 +477,7 @@ function loop(timestamp) {
     if (!loopRunning) return; if (gameState.isPaused) { lastTime = timestamp; requestAnimationFrame(loop); return; }
     const dt = (timestamp - lastTime) / 1000; lastTime = timestamp; gameTime += dt;
     if (gameTime > nextSpawnTime) { if (gameTime >= 300) { endGame(); return; } spawnEnemy(); nextSpawnTime = gameTime + Math.max(0.2, 2.0 - (gameTime / 60)); }
-    ctx.clearRect(0, 0, canvas.width, canvas.height); p = gameState.player; p.update(keys); p.draw(ctx);
+    ctx.clearRect(0, 0, canvas.width, canvas.height); const p = gameState.player; p.update(keys); p.draw(ctx);
     gameState.enemies.forEach(e => { e.update(p); e.draw(ctx); }); gameState.expOrbs.forEach(o => o.draw(ctx));
     gameState.damageNumbers.forEach((d, i) => { d.update(); d.draw(ctx); if (d.life <= 0) gameState.damageNumbers.splice(i, 1); });
     checkCollisions(); updateUI(); requestAnimationFrame(loop);
@@ -567,7 +492,48 @@ window.toggleDamageNumbers = () => { gameState.showDamageNumbers = !gameState.sh
 window.changeLang = (lang) => { currentLang = lang; updateTexts(); };
 window.changeBGMVolume = (v) => { audioManager.bgmVolume = v / 100; if (audioManager.bgmGain) audioManager.bgmGain.gain.setTargetAtTime(audioManager.bgmVolume * 0.1, audioManager.ctx.currentTime, 0.05); document.getElementById('bgm-value').innerText = v + '%'; };
 window.changeSFXVolume = (v) => { audioManager.sfxVolume = v / 100; document.getElementById('sfx-value').innerText = v + '%'; };
-window.toggleLibrary = () => document.getElementById('library-modal').classList.toggle('hidden');
+function updateLibrary() {
+    const libWeapons = document.getElementById('lib-weapons');
+    const libSkills = document.getElementById('lib-skills');
+    if (!libWeapons || !libSkills) return;
+
+    libWeapons.innerHTML = '';
+    libSkills.innerHTML = '';
+
+    ALL_WEAPON_TYPES.forEach(type => {
+        const item = document.createElement('div');
+        item.className = 'library-item';
+        item.innerHTML = `
+            <img src="assets/${type}.svg" class="lib-icon">
+            <div class="lib-info">
+                <div class="lib-name">${t(type + '_weapon')}</div>
+                <div class="lib-desc">${t(type + '_desc')}</div>
+            </div>
+        `;
+        libWeapons.appendChild(item);
+    });
+
+    ALL_SKILL_TYPES.forEach(type => {
+        const item = document.createElement('div');
+        item.className = 'library-item';
+        item.innerHTML = `
+            <img src="assets/${type}.svg" class="lib-icon">
+            <div class="lib-info">
+                <div class="lib-name">${t('skill_' + type)}</div>
+                <div class="lib-desc">${t('skill_' + type + '_desc')}</div>
+            </div>
+        `;
+        libSkills.appendChild(item);
+    });
+}
+
+window.toggleLibrary = () => {
+    const modal = document.getElementById('library-modal');
+    if (modal.classList.contains('hidden')) {
+        updateLibrary();
+    }
+    modal.classList.toggle('hidden');
+};
 
 // --- INIT ---
 updateTexts();
