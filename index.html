@@ -53,6 +53,12 @@
                 <p id="game-over-desc">You survived for <span id="final-time"></span></p>
                 <button onclick="location.reload()">Retry</button>
             </div>
+            <div id="game-clear-modal" class="hidden">
+                <h1 class="clear-title">GAME CLEAR!</h1>
+                <p class="clear-desc">Congratulations! You survived for <span id="clear-final-time"></span></p>
+                <div class="clear-stars">★★★</div>
+                <button onclick="location.reload()" data-i18n="retry">Retry</button>
+            </div>
             <!-- Title Screen -->
             <div id="title-screen">
                 <h1 data-i18n="game_title" class="title-logo">Blood Survivor</h1>
@@ -87,6 +93,7 @@
                         <div id="best-time-hell" class="best-time">Best: --:--</div>
                     </div>
                 </div>
+                <button class="back-btn" onclick="backToTitle()" data-i18n="back">Back</button>
             </div>
 
             <div id="start-screen" class="hidden">
@@ -155,6 +162,7 @@
                         <p data-i18n="spear_desc">Pure piercing projectile</p>
                     </button>
                 </div>
+                <button class="back-btn" onclick="backToCharacterSelect()" data-i18n="back">Back</button>
             </div>
 
             <!-- Character Selection Screen -->
@@ -318,6 +326,7 @@
                         </div>
                     </div>
                 </div>
+                <button class="back-btn" onclick="backToStageSelect()" data-i18n="back">Back</button>
             </div>
         </div>
     </div>

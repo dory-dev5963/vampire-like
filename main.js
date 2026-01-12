@@ -82,7 +82,7 @@ const TRANSLATIONS = {
         char_mage_desc: "High Damage & Cooldown", stat_hp_label: "HP", stat_atk_dmg_label: "Atk Damage", stat_atk_freq_label: "Atk Frequency", stat_move_speed_label: "Move Speed",
         stat_atk_speed_label: "Atk Speed", stat_armor_label: "Armor", stat_magnet_label: "Magnet", rarity_common: "COMMON", rarity_uncommon: "UNCOMMON", rarity_great: "GREAT",
         rarity_legend: "LEGEND", bgm_volume: "BGM Volume", sfx_volume: "SFX Volume", reroll: "Reroll", reroll_remaining: "Remaining: ", start_game: "START GAME",
-        game_title: "BLOOD SURVIVOR", select_weapon: "Select Weapon", choose_start_weapon: "Choose your starting weapon:",
+        game_title: "BLOOD SURVIVOR", select_weapon: "Select Weapon", choose_start_weapon: "Choose your starting weapon:", back: "Back",
         select_stage: "Select Stage", stage_forest: "Mystic Forest", stage_forest_desc: "Difficulty: Easy", stage_library: "Lost Library", stage_library_desc: "Difficulty: Normal", stage_hell: "Crimson Hell", stage_hell_desc: "Difficulty: Hard",
         cross_weapon: "Cross", cross_desc: "Boomerang attack", axe_weapon: "Axe", axe_desc: "High arc piercing attack", whip_weapon: "Whip", whip_desc: "Horizontal sweep with knockback",
         fire_wand_weapon: "Fire Wand", fire_wand_desc: "High damage fireballs", mine_weapon: "Mine", mine_desc: "Deploys explosive traps", spear_weapon: "Spear", spear_desc: "Pure piercing projectile"
@@ -115,7 +115,7 @@ const TRANSLATIONS = {
         char_mage_desc: "高い攻撃力と攻撃頻度を誇る", stat_hp_label: "HP", stat_atk_dmg_label: "攻撃力", stat_atk_freq_label: "攻撃頻度", stat_move_speed_label: "移動速度",
         stat_atk_speed_label: "攻撃速度", stat_armor_label: "防御", stat_magnet_label: "回収", rarity_common: "コモン", rarity_uncommon: "アンコモン", rarity_great: "グレート",
         rarity_legend: "レジェンド", bgm_volume: "BGM音量", sfx_volume: "SE音量", reroll: "リロール", reroll_remaining: "残り: ", start_game: "ゲーム開始",
-        game_title: "ブラッド・サバイバー", select_weapon: "武器の選択", choose_start_weapon: "最初の武器を選択してください:",
+        game_title: "ブラッド・サバイバー", select_weapon: "武器の選択", choose_start_weapon: "最初の武器を選択してください:", back: "戻る",
         select_stage: "ステージの選択", stage_forest: "神秘の森", stage_forest_desc: "難易度: イージー", stage_library: "失われた図書館", stage_library_desc: "難易度: ノーマル", stage_hell: "紅蓮の地獄", stage_hell_desc: "難易度: ハード",
         cross_weapon: "十字架", cross_desc: "ブーメラン攻撃", axe_weapon: "手斧", axe_desc: "放物線を描く貫通攻撃", whip_weapon: "ムチ", whip_desc: "水平方向へのなぎ払い攻撃",
         fire_wand_weapon: "ファイアワンド", fire_wand_desc: "高火力の火球攻撃", mine_weapon: "地雷", mine_desc: "接触で爆発する罠を設置", spear_weapon: "槍", spear_desc: "敵を貫通する直線攻撃"
@@ -135,7 +135,9 @@ class AudioManager {
         if (this.ctx) return;
         try {
             this.ctx = new (window.AudioContext || window.webkitAudioContext)();
-            this.bgmGain = this.ctx.createGain(); this.bgmGain.gain.value = this.bgmVolume * 0.1; this.bgmGain.connect(this.ctx.destination);
+            this.bgmGain = this.ctx.createGain();
+            this.bgmGain.gain.value = this.bgmVolume * 0.4; // Increased from 0.1
+            this.bgmGain.connect(this.ctx.destination);
         } catch (e) { console.error("Audio init failed", e); }
     }
     playSFX(type) {
@@ -156,16 +158,24 @@ class AudioManager {
         if (this.bgmStarted) return; this.init(); if (!this.ctx) return;
         if (this.ctx.state === 'suspended') this.ctx.resume(); this.bgmStarted = true;
         const playNote = (freq, time, dur) => {
+            if (!this.ctx || !this.bgmGain) return;
             const osc = this.ctx.createOscillator(); const g = this.ctx.createGain(); osc.type = 'triangle'; osc.frequency.setValueAtTime(freq, time);
-            g.gain.setValueAtTime(0, time); g.gain.linearRampToValueAtTime(0.1, time + 0.05); g.gain.exponentialRampToValueAtTime(0.001, time + dur);
+            g.gain.setValueAtTime(0, time);
+            g.gain.linearRampToValueAtTime(0.3, time + 0.05); // Increased from 0.1
+            g.gain.exponentialRampToValueAtTime(0.001, time + dur);
             osc.connect(g); g.connect(this.bgmGain); osc.start(time); osc.stop(time + dur);
         };
         const melody = [261.63, 0, 329.63, 0, 392.00, 0, 329.63, 0];
-        const scheduler = () => {
-            const now = this.ctx.currentTime; for (let i = 0; i < 8; i++) { const freq = melody[i]; if (freq > 0) playNote(freq, now + i * 0.5, 0.4); }
-            setTimeout(scheduler, 4000);
+        const loopMelody = () => {
+            if (!this.bgmStarted || !this.ctx) return;
+            const now = this.ctx.currentTime;
+            for (let i = 0; i < 8; i++) {
+                const freq = melody[i];
+                if (freq > 0) playNote(freq, now + i * 0.5, 0.45);
+            }
+            setTimeout(loopMelody, 4000);
         };
-        scheduler();
+        loopMelody();
     }
 }
 const audioManager = new AudioManager();
@@ -923,10 +933,18 @@ function checkCollisions() {
     }
 }
 
-function endGame() {
-    loopRunning = false; audioManager.playSFX('gameover');
-    document.getElementById('game-over-modal').classList.remove('hidden');
-    document.getElementById('final-time').innerText = formatTime(gameTime);
+function endGame(isCleared = false) {
+    loopRunning = false;
+    
+    if (isCleared) {
+        audioManager.playSFX('levelup');
+        document.getElementById('game-clear-modal').classList.remove('hidden');
+        document.getElementById('clear-final-time').innerText = formatTime(gameTime);
+    } else {
+        audioManager.playSFX('gameover');
+        document.getElementById('game-over-modal').classList.remove('hidden');
+        document.getElementById('final-time').innerText = formatTime(gameTime);
+    }
 
     // Save best time
     const stage = gameState.selectedStage;
@@ -939,7 +957,7 @@ function endGame() {
 function loop(timestamp) {
     if (!loopRunning) return; if (gameState.isPaused) { lastTime = timestamp; requestAnimationFrame(loop); return; }
     const dt = (timestamp - lastTime) / 1000; lastTime = timestamp; gameTime += dt;
-    if (gameTime > nextSpawnTime) { if (gameTime >= CLEAR_TIME) { endGame(); return; } spawnEnemy(); nextSpawnTime = gameTime + Math.max(0.2, 2.0 - (gameTime / 60)); }
+    if (gameTime > nextSpawnTime) { if (gameTime >= CLEAR_TIME) { endGame(true); return; } spawnEnemy(); nextSpawnTime = gameTime + Math.max(0.2, 2.0 - (gameTime / 60)); }
     ctx.fillStyle = STAGES[gameState.selectedStage].bgColor; ctx.fillRect(0, 0, canvas.width, canvas.height); const p = gameState.player; p.update(keys); p.draw(ctx);
     gameState.enemies.forEach(e => { e.update(p); e.draw(ctx); });
     gameState.expOrbs.forEach(o => o.draw(ctx));
@@ -949,6 +967,23 @@ function loop(timestamp) {
 }
 
 // --- GLOBAL ATTACHMENTS ---
+window.backToTitle = () => {
+    document.getElementById('stage-select-screen').classList.add('hidden');
+    document.getElementById('character-select-screen').classList.add('hidden');
+    document.getElementById('start-screen').classList.add('hidden');
+    document.getElementById('title-screen').classList.remove('hidden');
+    audioManager.playSFX('click');
+};
+window.backToStageSelect = () => {
+    document.getElementById('character-select-screen').classList.add('hidden');
+    document.getElementById('stage-select-screen').classList.remove('hidden');
+    audioManager.playSFX('click');
+};
+window.backToCharacterSelect = () => {
+    document.getElementById('start-screen').classList.add('hidden');
+    document.getElementById('character-select-screen').classList.remove('hidden');
+    audioManager.playSFX('click');
+};
 window.goToStageSelect = () => {
     document.getElementById('title-screen').classList.add('hidden');
     document.getElementById('stage-select-screen').classList.remove('hidden');
@@ -962,6 +997,23 @@ window.goToStageSelect = () => {
             el.innerText = 'Best: ' + (best ? formatTime(parseFloat(best)) : '--:--');
         }
     });
+};
+window.backToTitle = () => {
+    document.getElementById('stage-select-screen').classList.add('hidden');
+    document.getElementById('character-select-screen').classList.add('hidden');
+    document.getElementById('start-screen').classList.add('hidden');
+    document.getElementById('title-screen').classList.remove('hidden');
+    audioManager.playSFX('click');
+};
+window.backToStageSelect = () => {
+    document.getElementById('character-select-screen').classList.add('hidden');
+    document.getElementById('stage-select-screen').classList.remove('hidden');
+    audioManager.playSFX('click');
+};
+window.backToCharacterSelect = () => {
+    document.getElementById('start-screen').classList.add('hidden');
+    document.getElementById('character-select-screen').classList.remove('hidden');
+    audioManager.playSFX('click');
 };
 window.selectStage = (stage) => {
     gameState.selectedStage = stage;

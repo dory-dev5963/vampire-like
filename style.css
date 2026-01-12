@@ -153,6 +153,7 @@ body.settings-active #bottom-bars {
 
 #level-up-modal,
 #game-over-modal,
+#game-clear-modal,
 #title-screen,
 #character-select-screen,
 #stage-select-screen,
@@ -746,4 +747,80 @@ input[type="range"]::-webkit-slider-thumb {
     background: #f1c40f;
     border-radius: 50%;
     box-shadow: 0 0 5px rgba(0, 0, 0, 0.5);
+}
+
+/* Back Button */
+.back-btn {
+    margin-top: 30px;
+    padding: 12px 30px;
+    font-size: 16px;
+    background: #34495e;
+    color: #ecf0f1;
+    border: 2px solid #7f8c8d;
+    border-radius: 8px;
+    cursor: pointer;
+    transition: transform 0.2s, background 0.2s, box-shadow 0.2s;
+    pointer-events: auto;
+}
+
+.back-btn:hover {
+    background: #4a5f7f;
+    transform: translateY(-2px);
+    box-shadow: 0 5px 15px rgba(127, 140, 141, 0.3);
+}
+
+/* Game Clear Modal */
+#game-clear-modal {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    align-items: center;
+    background: radial-gradient(circle, #f1c40f 0%, #f39c12 50%, #e67e22 100%);
+    z-index: 100;
+    pointer-events: auto;
+}
+
+.clear-title {
+    font-size: 72px;
+    color: #fff;
+    text-shadow: 0 0 20px rgba(255, 255, 255, 0.8), 0 5px 10px rgba(0, 0, 0, 0.5);
+    margin: 0;
+    animation: clearPulse 2s ease-in-out infinite;
+}
+
+.clear-desc {
+    font-size: 24px;
+    color: #fff;
+    text-shadow: 0 2px 5px rgba(0, 0, 0, 0.5);
+    margin: 20px 0;
+}
+
+.clear-stars {
+    font-size: 64px;
+    margin: 30px 0;
+    text-shadow: 0 0 15px rgba(255, 255, 255, 0.8);
+    animation: starTwinkle 1s ease-in-out infinite;
+}
+
+@keyframes clearPulse {
+    0%, 100% {
+        transform: scale(1);
+    }
+    50% {
+        transform: scale(1.05);
+    }
+}
+
+@keyframes starTwinkle {
+    0%, 100% {
+        opacity: 1;
+    }
+    50% {
+        opacity: 0.6;
+    }
 }
