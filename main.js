@@ -746,8 +746,14 @@ function showLevelUpMenu() {
     gameState.isPaused = true; audioManager.playSFX('levelup');
     const modal = document.getElementById('level-up-modal'); const choicesDiv = document.getElementById('choices');
     choicesDiv.innerHTML = ''; modal.classList.remove('hidden'); const p = gameState.player;
-    document.getElementById('reroll-count').innerText = p.rerolls;
-    document.getElementById('reroll-btn').disabled = p.rerolls <= 0;
+
+    // Reroll info
+    const rerollContainer = document.getElementById('reroll-container');
+    if (rerollContainer) {
+        rerollContainer.classList.remove('hidden');
+        document.getElementById('reroll-count').innerText = p.rerolls;
+        document.getElementById('reroll-btn').disabled = p.rerolls <= 0;
+    }
 
     const options = [];
     const scale = (upgrades, rarity) => upgrades.map(u => ({ ...u, val: (['count', 'passive_amount', 'passive_armor'].includes(u.type) ? Math.ceil(u.val * rarity.mult) : u.val * rarity.mult) }));
@@ -767,9 +773,14 @@ function showLevelUpMenu() {
     });
 }
 
-function onChoiceMade() { document.getElementById('level-up-modal').classList.add('hidden'); gameState.isPaused = false; lastTime = performance.now(); updateInventory(); }
+window.rerollChoices = () => {
+    if (!gameState.player || gameState.player.rerolls <= 0) return;
+    gameState.player.rerolls--;
+    showLevelUpMenu();
+};
 
-window.rerollChoices = () => { if (gameState.player && gameState.player.rerolls > 0) { gameState.player.rerolls--; audioManager.playSFX('click'); showLevelUpMenu(); } };
+
+function onChoiceMade() { document.getElementById('level-up-modal').classList.add('hidden'); gameState.isPaused = false; lastTime = performance.now(); updateInventory(); }
 
 function spawnEnemy() { const min = Math.min(9, Math.floor(gameTime / 30)); gameState.enemies.push(new Enemy(ENEMY_TYPES[min])); }
 
