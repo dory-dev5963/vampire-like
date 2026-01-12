@@ -271,7 +271,23 @@ class OrbitWeapon {
 class WandWeapon {
     constructor(owner) { this.owner = owner; this.cooldown = 60; this.timer = 0; this.projectileSpeed = 7; this.projectileSize = 6; this.damage = 10; this.type = 'wand'; this.level = 1; this.maxLevel = 6; this.projectiles = []; }
     update() { this.timer++; const effective = this.cooldown / (this.owner.attackFrequency * this.owner.attackSpeed * this.owner.cooldownMult); if (this.timer >= effective) { this.timer = 0; this.fire(); } for (let i = this.projectiles.length - 1; i >= 0; i--) { const p = this.projectiles[i]; p.x += p.dx; p.y += p.dy; if (p.x < 0 || p.x > GAME_WIDTH || p.y < 0 || p.y > GAME_HEIGHT) this.projectiles.splice(i, 1); } }
-    fire() { const total = 1 + this.owner.projectileCountBonus; for (let i = 0; i < total; i++) this.projectiles.push({ x: this.owner.x, y: this.owner.y, dx: this.projectileSpeed * this.owner.projectileSpeedMult, dy: 0, radius: this.projectileSize, damage: this.damage * this.owner.damageMult }); }
+    fire() {
+        const total = 1 + this.owner.projectileCountBonus;
+        let target = null;
+        let minDist = Infinity;
+        gameState.enemies.forEach(e => {
+            const d = Math.hypot(e.x - this.owner.x, e.y - this.owner.y);
+            if (d < minDist) { minDist = d; target = e; }
+        });
+
+        const angle = target ? Math.atan2(target.y - this.owner.y, target.x - this.owner.x) : 0;
+        const dx = Math.cos(angle) * this.projectileSpeed * this.owner.projectileSpeedMult;
+        const dy = Math.sin(angle) * this.projectileSpeed * this.owner.projectileSpeedMult;
+
+        for (let i = 0; i < total; i++) {
+            this.projectiles.push({ x: this.owner.x, y: this.owner.y, dx, dy, radius: this.projectileSize, damage: this.damage * this.owner.damageMult });
+        }
+    }
     draw(ctx) { ctx.fillStyle = '#3498db'; this.projectiles.forEach(p => { ctx.beginPath(); ctx.arc(p.x, p.y, p.radius, 0, Math.PI * 2); ctx.fill(); }); }
     getHitboxes() { return this.projectiles; }
     upgrade(custom) { if (this.level >= this.maxLevel) return; this.level++; (custom || WEAPON_UPGRADES[this.type].find(u => u.level === this.level)?.upgrades || []).forEach(u => applyUpgrade(this, u)); }
@@ -288,7 +304,31 @@ class AuraWeapon {
 class KnifeWeapon {
     constructor(owner) { this.owner = owner; this.cooldown = 45; this.timer = 0; this.projectileSpeed = 10; this.projectileSize = 4; this.damage = 12; this.projectileCount = 1; this.type = 'knife'; this.level = 1; this.maxLevel = 6; this.projectiles = []; }
     update() { this.timer++; const effective = this.cooldown / (this.owner.attackFrequency * this.owner.attackSpeed * this.owner.cooldownMult); if (this.timer >= effective) { this.timer = 0; this.fire(); } for (let i = this.projectiles.length - 1; i >= 0; i--) { const p = this.projectiles[i]; p.x += p.dx; p.y += p.dy; if (p.x < 0 || p.x > GAME_WIDTH || p.y < 0 || p.y > GAME_HEIGHT) this.projectiles.splice(i, 1); } }
-    fire() { const total = this.projectileCount + this.owner.projectileCountBonus; for (let i = 0; i < total; i++) { const spread = (i - (total - 1) / 2) * 0.1; this.projectiles.push({ x: this.owner.x, y: this.owner.y, dx: this.projectileSpeed * this.owner.projectileSpeedMult, dy: spread * 10, radius: this.projectileSize, damage: this.damage * this.owner.damageMult }); } }
+    fire() {
+        const total = this.projectileCount + this.owner.projectileCountBonus;
+        let target = null;
+        let minDist = Infinity;
+        gameState.enemies.forEach(e => {
+            const d = Math.hypot(e.x - this.owner.x, e.y - this.owner.y);
+            if (d < minDist) { minDist = d; target = e; }
+        });
+
+        const baseAngle = target ? Math.atan2(target.y - this.owner.y, target.x - this.owner.x) : 0;
+        const speed = this.projectileSpeed * this.owner.projectileSpeedMult;
+
+        for (let i = 0; i < total; i++) {
+            const spread = (i - (total - 1) / 2) * 0.2;
+            const angle = baseAngle + spread;
+            this.projectiles.push({
+                x: this.owner.x,
+                y: this.owner.y,
+                dx: Math.cos(angle) * speed,
+                dy: Math.sin(angle) * speed,
+                radius: this.projectileSize,
+                damage: this.damage * this.owner.damageMult
+            });
+        }
+    }
     draw(ctx) { ctx.fillStyle = '#ecf0f1'; this.projectiles.forEach(p => { ctx.beginPath(); ctx.arc(p.x, p.y, p.radius, 0, Math.PI * 2); ctx.fill(); }); }
     getHitboxes() { return this.projectiles; }
     upgrade(custom) { if (this.level >= this.maxLevel) return; this.level++; (custom || WEAPON_UPGRADES[this.type].find(u => u.level === this.level)?.upgrades || []).forEach(u => applyUpgrade(this, u)); }
@@ -440,15 +480,16 @@ function showLevelUpMenu() {
     const scale = (upgrades, rarity) => upgrades.map(u => ({ ...u, val: (['count', 'passive_amount', 'passive_armor'].includes(u.type) ? Math.ceil(u.val * rarity.mult) : u.val * rarity.mult) }));
     const getDesc = (upgrades) => upgrades.map(u => t(u.descKey) + ' (' + (['count', 'passive_amount', 'passive_armor'].includes(u.type) ? '+' + u.val : 'x' + (u.val > 0 ? (1 + u.val).toFixed(2) : (1 - u.val).toFixed(2))) + ')').join(', ');
 
-    p.skills.forEach(s => { if (s.level < s.maxLevel) { const next = SKILL_UPGRADES[s.type].find(u => u.level === s.level + 1); if (next) { const r = getRandomRarity(false); const sc = scale(next.upgrades, r); options.push({ cat: 'label_skill', r, name: t('upgrade') + ' ' + t('skill_' + s.type) + ' (Lv ' + s.level + '->' + (s.level + 1) + '): ' + getDesc(sc), icon: 'assets/' + s.type + '.svg', action: () => { p.upgradeSkill(s.type, sc); onChoiceMade(); } }); } } });
-    if (p.skills.length < p.maxSkills) ALL_SKILL_TYPES.filter(type => !p.hasSkill(type)).forEach(type => { const r = getRandomRarity(false); options.push({ cat: 'label_skill', r, name: t('skill_' + type) + ' (' + t('affects') + t(t('scope_' + type)) + '): ' + t('skill_' + type + '_desc'), icon: 'assets/' + type + '.svg', action: () => { p.addSkill(type); onChoiceMade(); } }); });
-    p.weapons.forEach(w => { if (w.level < w.maxLevel) { const next = WEAPON_UPGRADES[w.type].find(u => u.level === w.level + 1); if (next) { const r = getRandomRarity(true); const sc = scale(next.upgrades, r); options.push({ cat: 'label_weapon', r, name: t('upgrade') + ' ' + t(w.type + '_weapon') + ' (Lv ' + w.level + '->' + (w.level + 1) + '): ' + getDesc(sc), icon: 'assets/' + w.type + '.svg', action: () => { w.upgrade(sc); onChoiceMade(); } }); } } });
-    if (p.weapons.length < p.maxWeapons) ALL_WEAPON_TYPES.filter(type => !p.hasWeapon(type)).forEach(type => { const r = getRandomRarity(true); options.push({ cat: 'label_weapon', r, name: t(type + "_weapon"), icon: 'assets/' + type + '.svg', action: () => { p.addWeapon(type); onChoiceMade(); } }); });
-    if (options.length === 0) options.push({ cat: 'label_skill', r: RARITIES.common, name: t("heal"), icon: "assets/heart.svg", action: () => { p.hp = Math.min(p.maxHp, p.hp + 50); onChoiceMade(); } });
+    p.skills.forEach(s => { if (s.level < s.maxLevel) { const next = SKILL_UPGRADES[s.type].find(u => u.level === s.level + 1); if (next) { const r = getRandomRarity(false); const sc = scale(next.upgrades, r); options.push({ cat: 'label_skill', r, isNew: false, name: t('upgrade') + ' ' + t('skill_' + s.type) + ' (Lv ' + s.level + '->' + (s.level + 1) + '): ' + getDesc(sc), icon: 'assets/' + s.type + '.svg', action: () => { p.upgradeSkill(s.type, sc); onChoiceMade(); } }); } } });
+    if (p.skills.length < p.maxSkills) ALL_SKILL_TYPES.filter(type => !p.hasSkill(type)).forEach(type => { const r = getRandomRarity(false); options.push({ cat: 'label_skill', r, isNew: true, name: t('skill_' + type) + ' (' + t('affects') + t(t('scope_' + type)) + '): ' + t('skill_' + type + '_desc'), icon: 'assets/' + type + '.svg', action: () => { p.addSkill(type); onChoiceMade(); } }); });
+    p.weapons.forEach(w => { if (w.level < w.maxLevel) { const next = WEAPON_UPGRADES[w.type].find(u => u.level === w.level + 1); if (next) { const r = getRandomRarity(true); const sc = scale(next.upgrades, r); options.push({ cat: 'label_weapon', r, isNew: false, name: t('upgrade') + ' ' + t(w.type + '_weapon') + ' (Lv ' + w.level + '->' + (w.level + 1) + '): ' + getDesc(sc), icon: 'assets/' + w.type + '.svg', action: () => { w.upgrade(sc); onChoiceMade(); } }); } } });
+    if (p.weapons.length < p.maxWeapons) ALL_WEAPON_TYPES.filter(type => !p.hasWeapon(type)).forEach(type => { const r = getRandomRarity(true); options.push({ cat: 'label_weapon', r, isNew: true, name: t(type + "_weapon"), icon: 'assets/' + type + '.svg', action: () => { p.addWeapon(type); onChoiceMade(); } }); });
+    if (options.length === 0) options.push({ cat: 'label_skill', r: RARITIES.common, isNew: false, name: t("heal"), icon: "assets/heart.svg", action: () => { p.hp = Math.min(p.maxHp, p.hp + 50); onChoiceMade(); } });
 
     options.sort(() => 0.5 - Math.random()).slice(0, 3).forEach(opt => {
         const btn = document.createElement('div'); btn.className = 'level-up-option'; btn.style.borderColor = opt.r.color;
-        btn.innerHTML = '<img src="' + opt.icon + '"><div style="flex-grow:1"><div style="display:flex; justify-content:space-between;"><span style="font-size:12px;color:#aaa;">' + t(opt.cat) + '</span><span style="font-size:10px;font-weight:bold;color:' + opt.r.color + '">' + t('rarity_' + opt.r.id) + '</span></div><div style="font-weight:bold;margin-top:2px;">' + opt.name + '</div></div>';
+        const rarityText = opt.isNew ? '' : t('rarity_' + opt.r.id);
+        btn.innerHTML = '<img src="' + opt.icon + '"><div style="flex-grow:1"><div style="display:flex; justify-content:space-between;"><span style="font-size:12px;color:#aaa;">' + t(opt.cat) + '</span><span style="font-size:10px;font-weight:bold;color:' + opt.r.color + '">' + rarityText + '</span></div><div style="font-weight:bold;margin-top:2px;">' + opt.name + '</div></div>';
         btn.onclick = opt.action; choicesDiv.appendChild(btn);
     });
 }
