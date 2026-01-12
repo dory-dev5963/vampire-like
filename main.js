@@ -159,6 +159,19 @@ class AudioManager {
 const audioManager = new AudioManager();
 
 // --- ENTITIES ---
+class Particle {
+    constructor(x, y, color, speed, angle, life) {
+        this.x = x; this.y = y; this.color = color;
+        this.vx = Math.cos(angle) * speed; this.vy = Math.sin(angle) * speed;
+        this.life = life; this.maxLife = life; this.size = Math.random() * 3 + 1;
+    }
+    update() { this.x += this.vx; this.y += this.vy; this.life--; }
+    draw(ctx) {
+        ctx.globalAlpha = this.life / this.maxLife; ctx.fillStyle = this.color;
+        ctx.beginPath(); ctx.arc(this.x, this.y, this.size, 0, Math.PI * 2); ctx.fill();
+        ctx.globalAlpha = 1.0;
+    }
+}
 class Enemy {
     constructor(type) {
         const side = Math.floor(Math.random() * 4);
@@ -280,9 +293,31 @@ function applyUpgrade(weapon, upgradeInfo) {
 }
 
 class OrbitWeapon {
-    constructor(owner) { this.owner = owner; this.radius = 60; this.projectileRadius = 10; this.angle = 0; this.projectileCount = 2; this.rotationSpeed = 0.05; this.damage = 15; this.type = 'orbit'; this.level = 1; this.maxLevel = 6; }
-    update() { const speedMult = this.owner.attackFrequency * this.owner.attackSpeed * this.owner.cooldownMult; this.angle += this.rotationSpeed * speedMult; }
-    draw(ctx) { ctx.fillStyle = '#f1c40f'; const total = this.projectileCount + this.owner.projectileCountBonus; for (let i = 0; i < total; i++) { const currentAngle = this.angle + (i * Math.PI * 2) / total; const x = this.owner.x + Math.cos(currentAngle) * (this.radius * this.owner.areaMult); const y = this.owner.y + Math.sin(currentAngle) * (this.radius * this.owner.areaMult); ctx.beginPath(); ctx.arc(x, y, this.projectileRadius, 0, Math.PI * 2); ctx.fill(); } }
+    constructor(owner) { this.owner = owner; this.radius = 60; this.projectileRadius = 10; this.angle = 0; this.projectileCount = 2; this.rotationSpeed = 0.05; this.damage = 15; this.type = 'orbit'; this.level = 1; this.maxLevel = 6; this.timer = 0; this.cooldown = 1; }
+    update() {
+        this.angle += 0.05 * this.owner.attackFrequency * this.owner.attackSpeed * this.owner.cooldownMult;
+        this.timer++; const effective = this.cooldown / (this.owner.attackFrequency * this.owner.attackSpeed * this.owner.cooldownMult);
+        if (this.timer >= effective) { this.timer = 0; }
+    }
+    draw(ctx) {
+        const total = this.projectileCount + this.owner.projectileCountBonus;
+        for (let i = 0; i < total; i++) {
+            const currentAngle = this.angle + (i * Math.PI * 2) / total;
+            const x = this.owner.x + Math.cos(currentAngle) * (this.radius * this.owner.areaMult);
+            const y = this.owner.y + Math.sin(currentAngle) * (this.radius * this.owner.areaMult);
+
+            // Outer glow
+            const grad = ctx.createRadialGradient(x, y, 0, x, y, this.projectileRadius * 2);
+            grad.addColorStop(0, '#3498db'); grad.addColorStop(1, 'transparent');
+            ctx.fillStyle = grad; ctx.beginPath(); ctx.arc(x, y, this.projectileRadius * 2, 0, Math.PI * 2); ctx.fill();
+
+            // Core
+            ctx.fillStyle = 'white'; ctx.beginPath(); ctx.arc(x, y, this.projectileRadius, 0, Math.PI * 2); ctx.fill();
+
+            // Trail
+            if (Math.random() > 0.5) gameState.particles.push(new Particle(x, y, '#3498db', Math.random() * 1, Math.random() * Math.PI * 2, 20));
+        }
+    }
     getHitboxes() { const boxes = []; const total = this.projectileCount + this.owner.projectileCountBonus; for (let i = 0; i < total; i++) { const currentAngle = this.angle + (i * Math.PI * 2) / total; boxes.push({ x: this.owner.x + Math.cos(currentAngle) * (this.radius * this.owner.areaMult), y: this.owner.y + Math.sin(currentAngle) * (this.radius * this.owner.areaMult), radius: this.projectileRadius, damage: this.damage * this.owner.damageMult }); } return boxes; }
     upgrade(custom) { if (this.level >= this.maxLevel) return; this.level++; (custom || WEAPON_UPGRADES[this.type].find(u => u.level === this.level)?.upgrades || []).forEach(u => applyUpgrade(this, u)); }
 }
@@ -313,9 +348,20 @@ class WandWeapon {
 }
 
 class AuraWeapon {
-    constructor(owner) { this.owner = owner; this.radius = 80; this.damage = 1; this.damageInterval = 30; this.timer = 0; this.type = 'aura'; this.level = 1; this.maxLevel = 6; }
-    update() { this.timer++; const effective = this.damageInterval / (this.owner.attackFrequency * this.owner.attackSpeed * this.owner.cooldownMult); if (this.timer >= effective) { this.timer = 0; this.shouldDamage = true; } else this.shouldDamage = false; }
-    draw(ctx) { ctx.fillStyle = 'rgba(155, 89, 182, 0.2)'; ctx.beginPath(); ctx.arc(this.owner.x, this.owner.y, this.radius * this.owner.areaMult, 0, Math.PI * 2); ctx.fill(); }
+    constructor(owner) { this.owner = owner; this.radius = 80; this.damage = 1; this.damageInterval = 30; this.timer = 0; this.type = 'aura'; this.level = 1; this.maxLevel = 6; this.pulse = 0; }
+    update() {
+        this.timer++; this.pulse = (this.pulse + 0.05) % 1;
+        const effective = this.damageInterval / (this.owner.attackFrequency * this.owner.attackSpeed * this.owner.cooldownMult);
+        if (this.timer >= effective) { this.timer = 0; this.shouldDamage = true; } else this.shouldDamage = false;
+    }
+    draw(ctx) {
+        const r = this.radius * this.owner.areaMult;
+        ctx.strokeStyle = `rgba(46, 204, 113, ${1 - this.pulse})`;
+        ctx.lineWidth = 2; ctx.beginPath(); ctx.arc(this.owner.x, this.owner.y, r * this.pulse, 0, Math.PI * 2); ctx.stroke();
+
+        ctx.fillStyle = 'rgba(46, 204, 113, 0.1)';
+        ctx.beginPath(); ctx.arc(this.owner.x, this.owner.y, r, 0, Math.PI * 2); ctx.fill();
+    }
     getHitboxes() { if (!this.shouldDamage) return []; return [{ x: this.owner.x, y: this.owner.y, radius: this.radius * this.owner.areaMult, damage: Math.max(1, Math.floor(this.damage * this.owner.damageMult)) }]; }
     upgrade(custom) { if (this.level >= this.maxLevel) return; this.level++; (custom || WEAPON_UPGRADES[this.type].find(u => u.level === this.level)?.upgrades || []).forEach(u => applyUpgrade(this, u)); }
 }
@@ -363,18 +409,78 @@ class HolyWaterWeapon {
 }
 
 class LightningWeapon {
-    constructor(owner) { this.owner = owner; this.cooldown = 90; this.timer = 0; this.damage = 30; this.chainCount = 2; this.range = 200; this.activeChain = []; this.chainTimer = 0; this.type = 'lightning'; this.level = 1; this.maxLevel = 6; }
-    update() { this.timer++; const effective = this.cooldown / (this.owner.attackFrequency * this.owner.attackSpeed * this.owner.cooldownMult); if (this.timer >= effective) { this.timer = 0; this.strike(); } if (this.chainTimer > 0) this.chainTimer--; }
-    strike() {
-        const player = this.owner; let currentSource = player; let hit = [];
-        for (let i = 0; i < this.chainCount; i++) {
-            let nearest = null; let minDist = this.range;
-            gameState.enemies.forEach(e => { if (!hit.includes(e)) { const d = Math.hypot(currentSource.x - e.x, currentSource.y - e.y); if (d < minDist) { minDist = d; nearest = e; } } });
-            if (nearest) { hit.push(nearest); const dmg = this.damage * player.damageMult; nearest.hp -= dmg; audioManager.playSFX('hit'); if (gameState.showDamageNumbers) gameState.damageNumbers.push(new DamageNumber(nearest.x, nearest.y, dmg)); currentSource = nearest; } else break;
+    constructor(owner) { this.owner = owner; this.cooldown = 90; this.timer = 0; this.damage = 30; this.chainCount = 2; this.range = 200; this.activeChain = []; this.chainTimer = 0; this.type = 'lightning'; this.level = 1; this.maxLevel = 6; this.strikes = []; }
+    update() {
+        this.timer++; const effective = this.cooldown / (this.owner.attackFrequency * this.owner.attackSpeed * this.owner.cooldownMult);
+        if (this.timer >= effective) {
+            this.timer = 0;
+            const player = this.owner;
+            let currentSource = player;
+            let hit = [];
+            for (let i = 0; i < this.chainCount + this.owner.projectileCountBonus; i++) {
+                let nearest = null;
+                let minDist = this.range * this.owner.areaMult;
+                gameState.enemies.forEach(e => {
+                    if (!hit.includes(e)) {
+                        const d = Math.hypot(currentSource.x - e.x, currentSource.y - e.y);
+                        if (d < minDist) { minDist = d; nearest = e; }
+                    }
+                });
+                if (nearest) {
+                    hit.push(nearest);
+                    const dmg = this.damage * player.damageMult;
+                    nearest.hp -= dmg;
+                    audioManager.playSFX('hit');
+                    if (gameState.showDamageNumbers) gameState.damageNumbers.push(new DamageNumber(nearest.x, nearest.y, dmg));
+                    currentSource = nearest;
+                } else break;
+            }
+            if (hit.length > 0) {
+                this.strikes.push({
+                    life: 15, // Duration of the lightning bolt
+                    points: this.generateLightningPoints(player.x, player.y, hit[0].x, hit[0].y),
+                    targets: hit
+                });
+            }
         }
-        if (hit.length > 0) { this.activeChain = [player, ...hit]; this.chainTimer = 10; }
+        for (let i = this.strikes.length - 1; i >= 0; i--) {
+            this.strikes[i].life--;
+            if (this.strikes[i].life <= 0) this.strikes.splice(i, 1);
+        }
     }
-    draw(ctx) { if (this.chainTimer > 0 && this.activeChain.length > 1) { ctx.strokeStyle = '#f1c40f'; ctx.lineWidth = 3; ctx.beginPath(); ctx.moveTo(this.activeChain[0].x, this.activeChain[0].y); for (let i = 1; i < this.activeChain.length; i++) ctx.lineTo(this.activeChain[i].x, this.activeChain[i].y); ctx.stroke(); } }
+    generateLightningPoints(x1, y1, x2, y2) {
+        const pts = [{ x: x1, y: y1 }];
+        const dist = Math.hypot(x2 - x1, y2 - y1);
+        const segments = Math.max(3, Math.floor(dist / 50)); // More segments for longer bolts
+        for (let i = 1; i < segments; i++) {
+            const rx = x1 + (x2 - x1) * (i / segments) + (Math.random() - 0.5) * 30; // Random offset
+            const ry = y1 + (y2 - y1) * (i / segments) + (Math.random() - 0.5) * 30;
+            pts.push({ x: rx, y: ry });
+        }
+        pts.push({ x: x2, y: y2 });
+        return pts;
+    }
+    draw(ctx) {
+        ctx.strokeStyle = '#f1c40f';
+        ctx.shadowBlur = 10;
+        ctx.shadowColor = '#f1c40f';
+        this.strikes.forEach(s => {
+            ctx.lineWidth = 2 * (s.life / 15); // Fade out effect
+            ctx.beginPath();
+            ctx.moveTo(s.points[0].x, s.points[0].y);
+            for (let i = 1; i < s.points.length; i++) {
+                ctx.lineTo(s.points[i].x, s.points[i].y);
+            }
+            ctx.stroke();
+            // Sparkles at impact points
+            s.targets.forEach(target => {
+                for (let j = 0; j < 3; j++) {
+                    gameState.particles.push(new Particle(target.x, target.y, '#f1c40f', Math.random() * 2, Math.random() * Math.PI * 2, 10));
+                }
+            });
+        });
+        ctx.shadowBlur = 0;
+    }
     getHitboxes() { return []; }
     upgrade(custom) { if (this.level >= this.maxLevel) return; this.level++; (custom || WEAPON_UPGRADES[this.type].find(u => u.level === this.level)?.upgrades || []).forEach(u => applyUpgrade(this, u)); }
 }
@@ -383,7 +489,17 @@ class CrossWeapon {
     constructor(owner) { this.owner = owner; this.cooldown = 80; this.timer = 0; this.projectileSpeed = 8; this.projectileSize = 8; this.damage = 15; this.type = 'cross'; this.level = 1; this.maxLevel = 6; this.projectiles = []; }
     update() { this.timer++; const effective = this.cooldown / (this.owner.attackFrequency * this.owner.attackSpeed * this.owner.cooldownMult); if (this.timer >= effective) { this.timer = 0; this.fire(); } for (let i = this.projectiles.length - 1; i >= 0; i--) { const p = this.projectiles[i]; if (!p.returning) { p.x += p.dx; p.y += p.dy; p.life--; if (p.life <= 0) p.returning = true; } else { const dx = this.owner.x - p.x; const dy = this.owner.y - p.y; const d = Math.hypot(dx, dy); if (d < 10) this.projectiles.splice(i, 1); else { p.x += (dx / d) * (this.projectileSpeed * 1.5); p.y += (dy / d) * (this.projectileSpeed * 1.5); } } } }
     fire() { const total = 1 + this.owner.projectileCountBonus; for (let i = 0; i < total; i++) { const angle = (i * Math.PI * 2) / total; this.projectiles.push({ x: this.owner.x, y: this.owner.y, dx: Math.cos(angle) * this.projectileSpeed * this.owner.projectileSpeedMult, dy: Math.sin(angle) * this.projectileSpeed * this.owner.projectileSpeedMult, radius: this.projectileSize, damage: this.damage * this.owner.damageMult, returning: false, life: 60 }); } }
-    draw(ctx) { ctx.fillStyle = '#f1c40f'; this.projectiles.forEach(p => { ctx.beginPath(); ctx.arc(p.x, p.y, p.radius, 0, Math.PI * 2); ctx.fill(); }); }
+    draw(ctx) {
+        ctx.fillStyle = '#f1c40f'; ctx.shadowBlur = 5; ctx.shadowColor = '#f1c40f';
+        this.projectiles.forEach(p => {
+            ctx.save(); ctx.translate(p.x, p.y); ctx.rotate(gameTime * 10);
+            ctx.beginPath(); ctx.moveTo(0, -p.radius); ctx.lineTo(p.radius, 0); ctx.lineTo(0, p.radius); ctx.lineTo(-p.radius, 0); ctx.closePath(); ctx.fill();
+            ctx.restore();
+            // Trail particles
+            if (Math.random() > 0.5) gameState.particles.push(new Particle(p.x, p.y, '#f1c40f', 0.2, Math.random() * PI2, 10));
+        });
+        ctx.shadowBlur = 0;
+    }
     getHitboxes() { return this.projectiles; }
     upgrade(custom) { if (this.level >= this.maxLevel) return; this.level++; (custom || WEAPON_UPGRADES[this.type].find(u => u.level === this.level)?.upgrades || []).forEach(u => applyUpgrade(this, u)); }
 }
@@ -392,15 +508,37 @@ class AxeWeapon {
     constructor(owner) { this.owner = owner; this.cooldown = 100; this.timer = 0; this.projectileSpeed = 10; this.projectileSize = 10; this.damage = 25; this.type = 'axe'; this.level = 1; this.maxLevel = 6; this.projectiles = []; }
     update() { this.timer++; const effective = this.cooldown / (this.owner.attackFrequency * this.owner.attackSpeed * this.owner.cooldownMult); if (this.timer >= effective) { this.timer = 0; this.fire(); } for (let i = this.projectiles.length - 1; i >= 0; i--) { const p = this.projectiles[i]; p.x += p.dx; p.y += p.dy; p.dy += 0.2; if (p.y > GAME_HEIGHT + 50) this.projectiles.splice(i, 1); } }
     fire() { const total = 1 + this.owner.projectileCountBonus; for (let i = 0; i < total; i++) { this.projectiles.push({ x: this.owner.x, y: this.owner.y, dx: (Math.random() - 0.5) * 10, dy: -12, radius: this.projectileSize, damage: this.damage * this.owner.damageMult }); } }
-    draw(ctx) { ctx.fillStyle = '#95a5a6'; this.projectiles.forEach(p => { ctx.beginPath(); ctx.arc(p.x, p.y, p.radius, 0, Math.PI * 2); ctx.fill(); }); }
+    draw(ctx) {
+        ctx.fillStyle = '#95a5a6';
+        this.projectiles.forEach(p => {
+            ctx.save(); ctx.translate(p.x, p.y); ctx.rotate(gameTime * 8);
+            ctx.beginPath(); ctx.arc(0, 0, p.radius, 0, Math.PI, true); ctx.lineTo(0, 0); ctx.closePath(); ctx.fill();
+            ctx.restore();
+        });
+    }
     getHitboxes() { return this.projectiles; }
     upgrade(custom) { if (this.level >= this.maxLevel) return; this.level++; (custom || WEAPON_UPGRADES[this.type].find(u => u.level === this.level)?.upgrades || []).forEach(u => applyUpgrade(this, u)); }
 }
 
 class WhipWeapon {
     constructor(owner) { this.owner = owner; this.cooldown = 60; this.timer = 0; this.range = 100; this.height = 30; this.damage = 15; this.type = 'whip'; this.level = 1; this.maxLevel = 6; this.activeTime = 0; this.direction = 1; }
-    update() { this.timer++; const effective = this.cooldown / (this.owner.attackFrequency * this.owner.attackSpeed * this.owner.cooldownMult); if (this.timer >= effective) { this.timer = 0; this.activeTime = 10; this.direction = (Math.random() > 0.5 ? 1 : -1); audioManager.playSFX('hit'); } if (this.activeTime > 0) this.activeTime--; }
-    draw(ctx) { if (this.activeTime > 0) { ctx.fillStyle = 'rgba(255, 255, 255, 0.6)'; const w = this.range * this.owner.areaMult; const h = this.height * this.owner.areaMult; ctx.fillRect(this.owner.x + (this.direction === 1 ? 0 : -w), this.owner.y - h / 2, w, h); } }
+    update() {
+        this.timer++; const effective = this.cooldown / (this.owner.attackFrequency * this.owner.attackSpeed * this.owner.cooldownMult);
+        if (this.timer >= effective) { this.timer = 0; this.activeTime = 10; this.direction = (Math.random() > 0.5 ? 1 : -1); audioManager.playSFX('hit'); } if (this.activeTime > 0) this.activeTime--;
+    }
+    draw(ctx) {
+        if (this.activeTime > 0) {
+            ctx.strokeStyle = 'white'; ctx.lineWidth = 4 * (this.activeTime / 10); ctx.lineCap = 'round';
+            const w = this.range * this.owner.areaMult;
+            ctx.beginPath(); ctx.moveTo(this.owner.x, this.owner.y);
+            const cpX = this.owner.x + (this.direction === 1 ? w / 2 : -w / 2);
+            const cpY = this.owner.y - 50;
+            ctx.quadraticCurveTo(cpX, cpY, this.owner.x + (this.direction === 1 ? w : -w), this.owner.y);
+            ctx.stroke();
+            // Impact sparkles
+            for (let i = 0; i < 3; i++) gameState.particles.push(new Particle(this.owner.x + (this.direction === 1 ? w : -w), this.owner.y, 'white', 2, Math.random() * Math.PI * 2, 10));
+        }
+    }
     getHitboxes() { if (this.activeTime <= 0) return []; const w = this.range * this.owner.areaMult; const h = this.height * this.owner.areaMult; return [{ x: this.owner.x + (this.direction === 1 ? w / 2 : -w / 2), y: this.owner.y, width: w, height: h, damage: this.damage * this.owner.damageMult, isRect: true }]; }
     upgrade(custom) { if (this.level >= this.maxLevel) return; this.level++; (custom || WEAPON_UPGRADES[this.type].find(u => u.level === this.level)?.upgrades || []).forEach(u => applyUpgrade(this, u)); }
 }
@@ -409,7 +547,17 @@ class MineWeapon {
     constructor(owner) { this.owner = owner; this.cooldown = 120; this.timer = 0; this.radius = 40; this.damage = 30; this.type = 'mine'; this.level = 1; this.maxLevel = 6; this.mines = []; }
     update() { this.timer++; const effective = this.cooldown / (this.owner.attackFrequency * this.owner.attackSpeed * this.owner.cooldownMult); if (this.timer >= effective) { this.timer = 0; this.fire(); } for (let i = this.mines.length - 1; i >= 0; i--) { const m = this.mines[i]; if (m.exploded) { m.life--; if (m.life <= 0) this.mines.splice(i, 1); } } }
     fire() { const total = 1 + this.owner.projectileCountBonus; for (let i = 0; i < total; i++) { this.mines.push({ x: this.owner.x, y: this.owner.y, radius: 20, explodeRadius: this.radius * this.owner.areaMult, damage: this.damage * this.owner.damageMult, exploded: false, life: 30 }); } }
-    draw(ctx) { this.mines.forEach(m => { if (!m.exploded) { ctx.fillStyle = '#e74c3c'; ctx.beginPath(); ctx.arc(m.x, m.y, 8, 0, Math.PI * 2); ctx.fill(); ctx.strokeStyle = 'white'; ctx.stroke(); } else { ctx.fillStyle = 'rgba(231, 76, 60, 0.4)'; ctx.beginPath(); ctx.arc(m.x, m.y, m.explodeRadius, 0, Math.PI * 2); ctx.fill(); } }); }
+    draw(ctx) {
+        this.mines.forEach(m => {
+            if (!m.exploded) {
+                ctx.fillStyle = '#e74c3c'; ctx.beginPath(); ctx.arc(m.x, m.y, 8 + Math.sin(gameTime * 10) * 2, 0, Math.PI * 2); ctx.fill();
+            } else {
+                const grad = ctx.createRadialGradient(m.x, m.y, 0, m.x, m.y, m.explodeRadius);
+                grad.addColorStop(0, 'rgba(255,255,255,0.8)'); grad.addColorStop(0.3, '#e74c3c'); grad.addColorStop(1, 'transparent');
+                ctx.fillStyle = grad; ctx.beginPath(); ctx.arc(m.x, m.y, m.explodeRadius, 0, Math.PI * 2); ctx.fill();
+            }
+        });
+    }
     getHitboxes() {
         const hits = [];
         this.mines.forEach(m => {
@@ -424,6 +572,23 @@ class MineWeapon {
     upgrade(custom) { if (this.level >= this.maxLevel) return; this.level++; (custom || WEAPON_UPGRADES[this.type].find(u => u.level === this.level)?.upgrades || []).forEach(u => applyUpgrade(this, u)); }
 }
 
+class FireWandWeapon {
+    constructor(owner) { this.owner = owner; this.cooldown = 100; this.timer = 0; this.projectileSpeed = 10; this.projectileSize = 10; this.damage = 25; this.type = 'fire_wand'; this.level = 1; this.maxLevel = 6; this.projectiles = []; }
+    update() { this.timer++; const effective = this.cooldown / (this.owner.attackFrequency * this.owner.attackSpeed * this.owner.cooldownMult); if (this.timer >= effective) { this.timer = 0; this.fire(); } for (let i = this.projectiles.length - 1; i >= 0; i--) { const p = this.projectiles[i]; p.x += p.dx; p.y += p.dy; if (p.x < -20 || p.x > GAME_WIDTH + 20 || p.y < -20 || p.y > GAME_HEIGHT + 20) this.projectiles.splice(i, 1); } }
+    fire() { const total = 1 + this.owner.projectileCountBonus; for (let i = 0; i < total; i++) { const angle = Math.random() * Math.PI * 2; this.projectiles.push({ x: this.owner.x, y: this.owner.y, dx: Math.cos(angle) * this.projectileSpeed * this.owner.projectileSpeedMult, dy: Math.sin(angle) * this.projectileSpeed * this.owner.projectileSpeedMult, radius: this.projectileSize, damage: this.damage * this.owner.damageMult }); } }
+    draw(ctx) {
+        this.projectiles.forEach(p => {
+            const grad = ctx.createRadialGradient(p.x, p.y, 0, p.x, p.y, p.radius * 2);
+            grad.addColorStop(0, '#e67e22'); grad.addColorStop(0.5, '#f39c12'); grad.addColorStop(1, 'transparent');
+            ctx.fillStyle = grad; ctx.beginPath(); ctx.arc(p.x, p.y, p.radius * 2, 0, Math.PI * 2); ctx.fill();
+            // Flame particles
+            if (Math.random() > 0.5) gameState.particles.push(new Particle(p.x, p.y, '#e67e22', 1, Math.random() * Math.PI * 2, 15));
+        });
+    }
+    getHitboxes() { return this.projectiles; }
+    upgrade(custom) { if (this.level >= this.maxLevel) return; this.level++; (custom || WEAPON_UPGRADES[this.type].find(u => u.level === this.level)?.upgrades || []).forEach(u => applyUpgrade(this, u)); }
+}
+
 class SpearWeapon {
     constructor(owner) { this.owner = owner; this.cooldown = 80; this.timer = 0; this.projectileSpeed = 12; this.projectileSize = 4; this.damage = 20; this.type = 'spear'; this.level = 1; this.maxLevel = 6; this.projectiles = []; }
     update() { this.timer++; const effective = this.cooldown / (this.owner.attackFrequency * this.owner.attackSpeed * this.owner.cooldownMult); if (this.timer >= effective) { this.timer = 0; this.fire(); } for (let i = this.projectiles.length - 1; i >= 0; i--) { const p = this.projectiles[i]; p.x += p.dx; p.y += p.dy; if (p.x < -100 || p.x > GAME_WIDTH + 100 || p.y < -100 || p.y > GAME_HEIGHT + 100) this.projectiles.splice(i, 1); } }
@@ -433,11 +598,35 @@ class SpearWeapon {
         gameState.enemies.forEach(e => { const d = Math.hypot(e.x - this.owner.x, e.y - this.owner.y); if (d < minDist) { minDist = d; target = e; } });
         const angle = target ? Math.atan2(target.y - this.owner.y, target.x - this.owner.x) : 0;
         for (let i = 0; i < total; i++) {
-            const offset = (i - (total - 1) / 2) * 15;
-            this.projectiles.push({ x: this.owner.x, y: this.owner.y, dx: Math.cos(angle) * this.projectileSpeed * this.owner.projectileSpeedMult, dy: Math.sin(angle) * this.projectileSpeed * this.owner.projectileSpeedMult, radius: this.projectileSize, damage: this.damage * this.owner.damageMult });
+            this.projectiles.push({
+                x: this.owner.x, y: this.owner.y,
+                dx: Math.cos(angle) * this.projectileSpeed * this.owner.projectileSpeedMult,
+                dy: Math.sin(angle) * this.projectileSpeed * this.owner.projectileSpeedMult,
+                radius: this.projectileSize, damage: this.damage * this.owner.damageMult,
+                trail: []
+            });
         }
+        audioManager.playSFX('hit');
     }
-    draw(ctx) { ctx.fillStyle = '#ecf0f1'; this.projectiles.forEach(p => { ctx.beginPath(); ctx.arc(p.x, p.y, p.radius * 2, 0, Math.PI * 2); ctx.fill(); }); }
+    draw(ctx) {
+        this.projectiles.forEach(p => {
+            const angle = Math.atan2(p.dy, p.dx);
+            ctx.save(); ctx.translate(p.x, p.y); ctx.rotate(angle);
+            ctx.fillStyle = 'rgba(236, 240, 241, 0.5)'; ctx.fillRect(-20, -2, 20, 4); // Tail
+            ctx.fillStyle = 'white'; ctx.beginPath(); ctx.moveTo(5, 0); ctx.lineTo(-10, -4); ctx.lineTo(-10, 4); ctx.closePath(); ctx.fill();
+            ctx.restore();
+            // Sparkles
+            if (Math.random() > 0.7) gameState.particles.push(new Particle(p.x, p.y, '#f1c40f', 0.5, Math.random() * Math.PI * 2, 15));
+
+            // Outer glow
+            const grad = ctx.createRadialGradient(p.x, p.y, 0, p.x, p.y, p.radius * 2);
+            grad.addColorStop(0, 'rgba(241, 196, 15, 0.5)'); grad.addColorStop(1, 'transparent');
+            ctx.fillStyle = grad; ctx.beginPath(); ctx.arc(p.x, p.y, p.radius * 2, 0, Math.PI * 2); ctx.fill();
+
+            // Core
+            ctx.fillStyle = '#f1c40f'; ctx.beginPath(); ctx.arc(p.x, p.y, p.radius, 0, Math.PI * 2); ctx.fill();
+        });
+    }
     getHitboxes() { return this.projectiles; }
     upgrade(custom) { if (this.level >= this.maxLevel) return; this.level++; (custom || WEAPON_UPGRADES[this.type].find(u => u.level === this.level)?.upgrades || []).forEach(u => applyUpgrade(this, u)); }
 }
@@ -513,7 +702,7 @@ class Player {
 }
 
 // --- GAME STATE & ENGINE ---
-const gameState = { player: null, enemies: [], expOrbs: [], projectiles: [], damageNumbers: [], showDamageNumbers: true, isPaused: false, selectedCharacter: 'knight', selectedStage: 'forest' };
+const gameState = { player: null, enemies: [], expOrbs: [], projectiles: [], damageNumbers: [], particles: [], showDamageNumbers: true, isPaused: false, selectedCharacter: 'knight', selectedStage: 'forest' };
 const canvas = document.getElementById('gameCanvas'); const ctx = canvas.getContext('2d');
 let gameTime = 0, lastTime = 0, nextSpawnTime = 0, loopRunning = false;
 const keys = { w: false, s: false, a: false, d: false, ArrowUp: false, ArrowDown: false, ArrowLeft: false, ArrowRight: false };
@@ -595,7 +784,12 @@ function checkCollisions() {
             } else {
                 if (Math.hypot(h.x - e.x, h.y - e.y) < h.radius + e.radius) hit = true;
             }
-            if (hit) { const d = h.damage || w.damage * p.damageMult; e.hp -= d; audioManager.playSFX('hit'); if (gameState.showDamageNumbers) gameState.damageNumbers.push(new DamageNumber(e.x, e.y, d)); }
+            if (hit) {
+                const d = h.damage || w.damage * p.damageMult; e.hp -= d; audioManager.playSFX('hit');
+                if (gameState.showDamageNumbers) gameState.damageNumbers.push(new DamageNumber(e.x, e.y, d));
+                // Hit particles
+                for (let j = 0; j < 5; j++) gameState.particles.push(new Particle(e.x, e.y, e.color, Math.random() * 2 + 1, Math.random() * Math.PI * 2, 20));
+            }
         }));
         if (e.hp <= 0) { gameState.expOrbs.push(new ExpOrb(e.x, e.y, e.exp)); gameState.enemies.splice(i, 1); }
     }
@@ -611,7 +805,9 @@ function loop(timestamp) {
     const dt = (timestamp - lastTime) / 1000; lastTime = timestamp; gameTime += dt;
     if (gameTime > nextSpawnTime) { if (gameTime >= 300) { endGame(); return; } spawnEnemy(); nextSpawnTime = gameTime + Math.max(0.2, 2.0 - (gameTime / 60)); }
     ctx.fillStyle = STAGES[gameState.selectedStage].bgColor; ctx.fillRect(0, 0, canvas.width, canvas.height); const p = gameState.player; p.update(keys); p.draw(ctx);
-    gameState.enemies.forEach(e => { e.update(p); e.draw(ctx); }); gameState.expOrbs.forEach(o => o.draw(ctx));
+    gameState.enemies.forEach(e => { e.update(p); e.draw(ctx); });
+    gameState.expOrbs.forEach(o => o.draw(ctx));
+    gameState.particles.forEach((p, i) => { p.update(); p.draw(ctx); if (p.life <= 0) gameState.particles.splice(i, 1); });
     gameState.damageNumbers.forEach((d, i) => { d.update(); d.draw(ctx); if (d.life <= 0) gameState.damageNumbers.splice(i, 1); });
     checkCollisions(); updateUI(); requestAnimationFrame(loop);
 }
