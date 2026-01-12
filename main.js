@@ -500,7 +500,29 @@ class LightningWeapon {
 class CrossWeapon {
     constructor(owner) { this.owner = owner; this.cooldown = 80; this.timer = 0; this.projectileSpeed = 8; this.projectileSize = 8; this.damage = 15; this.type = 'cross'; this.level = 1; this.maxLevel = 6; this.projectiles = []; }
     update() { this.timer++; const effective = this.cooldown / (this.owner.attackFrequency * this.owner.attackSpeed * this.owner.cooldownMult); if (this.timer >= effective) { this.timer = 0; this.fire(); } for (let i = this.projectiles.length - 1; i >= 0; i--) { const p = this.projectiles[i]; if (!p.returning) { p.x += p.dx; p.y += p.dy; p.life--; if (p.life <= 0) p.returning = true; } else { const dx = this.owner.x - p.x; const dy = this.owner.y - p.y; const d = Math.hypot(dx, dy); if (d < 10) this.projectiles.splice(i, 1); else { p.x += (dx / d) * (this.projectileSpeed * 1.5); p.y += (dy / d) * (this.projectileSpeed * 1.5); } } } }
-    fire() { const total = 1 + this.owner.projectileCountBonus; for (let i = 0; i < total; i++) { const angle = (i * Math.PI * 2) / total; this.projectiles.push({ x: this.owner.x, y: this.owner.y, dx: Math.cos(angle) * this.projectileSpeed * this.owner.projectileSpeedMult, dy: Math.sin(angle) * this.projectileSpeed * this.owner.projectileSpeedMult, radius: this.projectileSize, damage: this.damage * this.owner.damageMult, returning: false, life: 60 }); } }
+    fire() {
+        const total = 1 + this.owner.projectileCountBonus;
+        let target = null;
+        let minDist = Infinity;
+        gameState.enemies.forEach(e => {
+            const d = Math.hypot(e.x - this.owner.x, e.y - this.owner.y);
+            if (d < minDist) { minDist = d; target = e; }
+        });
+
+        const baseAngle = target ? Math.atan2(target.y - this.owner.y, target.x - this.owner.x) : 0;
+        const spread = Math.PI / 4; // 45 degree spread
+
+        for (let i = 0; i < total; i++) {
+            const angle = total > 1 ? baseAngle - spread / 2 + (i / (total - 1)) * spread : baseAngle;
+            this.projectiles.push({
+                x: this.owner.x, y: this.owner.y,
+                dx: Math.cos(angle) * this.projectileSpeed * this.owner.projectileSpeedMult,
+                dy: Math.sin(angle) * this.projectileSpeed * this.owner.projectileSpeedMult,
+                radius: this.projectileSize, damage: this.damage * this.owner.damageMult,
+                returning: false, life: 60
+            });
+        }
+    }
     draw(ctx) {
         ctx.fillStyle = '#f1c40f'; ctx.shadowBlur = 5; ctx.shadowColor = '#f1c40f';
         this.projectiles.forEach(p => {
