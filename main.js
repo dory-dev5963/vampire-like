@@ -508,7 +508,7 @@ class CrossWeapon {
             ctx.beginPath(); ctx.moveTo(0, -p.radius); ctx.lineTo(p.radius, 0); ctx.lineTo(0, p.radius); ctx.lineTo(-p.radius, 0); ctx.closePath(); ctx.fill();
             ctx.restore();
             // Trail particles
-            if (Math.random() > 0.5) gameState.particles.push(new Particle(p.x, p.y, '#f1c40f', 0.2, Math.random() * PI2, 10));
+            if (Math.random() > 0.5) gameState.particles.push(new Particle(p.x, p.y, '#f1c40f', 0.2, Math.random() * Math.PI * 2, 10));
         });
         ctx.shadowBlur = 0;
     }
