@@ -198,7 +198,47 @@ class Enemy {
         const dx = target.x - this.x; const dy = target.y - this.y; const dist = Math.sqrt(dx * dx + dy * dy);
         if (dist > 0) { this.x += (dx / dist) * this.speed; this.y += (dy / dist) * this.speed; }
     }
-    draw(ctx) { ctx.fillStyle = this.color; ctx.beginPath(); ctx.arc(this.x, this.y, this.radius, 0, Math.PI * 2); ctx.fill(); }
+    draw(ctx) {
+        const bounce = Math.sin(gameTime * 10) * 2;
+        const r = this.radius + bounce;
+        ctx.save();
+        ctx.translate(this.x, this.y);
+
+        // Body
+        ctx.fillStyle = this.color;
+        ctx.beginPath();
+        ctx.arc(0, 0, r, 0, Math.PI * 2);
+        ctx.fill();
+
+        // Horns/Spikes for stronger enemies
+        if (this.radius > 15) {
+            ctx.fillStyle = '#2c3e50';
+            for (let i = 0; i < 3; i++) {
+                ctx.beginPath();
+                ctx.moveTo(-10 + i * 10, -r);
+                ctx.lineTo(-5 + i * 10, -r - 10);
+                ctx.lineTo(i * 10, -r);
+                ctx.fill();
+            }
+        }
+
+        // Eyes
+        ctx.fillStyle = 'white';
+        ctx.beginPath(); ctx.arc(-r * 0.4, -r * 0.2, r * 0.25, 0, Math.PI * 2); ctx.fill();
+        ctx.beginPath(); ctx.arc(r * 0.4, -r * 0.2, r * 0.25, 0, Math.PI * 2); ctx.fill();
+
+        ctx.fillStyle = 'black';
+        ctx.beginPath(); ctx.arc(-r * 0.4, -r * 0.2, r * 0.1, 0, Math.PI * 2); ctx.fill();
+        ctx.beginPath(); ctx.arc(r * 0.4, -r * 0.2, r * 0.1, 0, Math.PI * 2); ctx.fill();
+
+        // Angry brows
+        ctx.strokeStyle = 'black';
+        ctx.lineWidth = 2;
+        ctx.beginPath(); ctx.moveTo(-r * 0.7, -r * 0.5); ctx.lineTo(-r * 0.1, -r * 0.2); ctx.stroke();
+        ctx.beginPath(); ctx.moveTo(r * 0.7, -r * 0.5); ctx.lineTo(r * 0.1, -r * 0.2); ctx.stroke();
+
+        ctx.restore();
+    }
 }
 
 class ExpOrb {
@@ -701,12 +741,51 @@ class Player {
         this.weapons.forEach(w => w.update());
     }
     draw(ctx) {
-        ctx.fillStyle = this.color; ctx.beginPath(); ctx.arc(this.x, this.y, this.radius, 0, Math.PI * 2); ctx.fill();
-        ctx.strokeStyle = 'rgba(255, 255, 255, 0.6)'; ctx.lineWidth = 2; ctx.beginPath();
-        if (this.charType === 'knight') ctx.arc(this.x, this.y, this.radius - 3, 0.5, Math.PI - 0.5);
-        else if (this.charType === 'rogue') { ctx.moveTo(this.x - 4, this.y - 4); ctx.lineTo(this.x + 4, this.y + 4); ctx.moveTo(this.x + 4, this.y - 4); ctx.lineTo(this.x - 4, this.y + 4); }
-        else if (this.charType === 'mage') ctx.arc(this.x, this.y, 3, 0, Math.PI * 2);
-        ctx.stroke(); this.weapons.forEach(w => w.draw(ctx));
+        ctx.save();
+        ctx.translate(this.x, this.y);
+
+        // Body base
+        ctx.fillStyle = this.color;
+        ctx.beginPath();
+        ctx.arc(0, 0, this.radius, 0, Math.PI * 2);
+        ctx.fill();
+
+        if (this.charType === 'knight') {
+            // Helmet Visor
+            ctx.fillStyle = '#2c3e50';
+            ctx.fillRect(-8, -4, 16, 6);
+            ctx.fillStyle = '#f1c40f'; // Glow in visor
+            ctx.fillRect(-4, -2, 8, 2);
+            // Plume
+            ctx.fillStyle = '#e74c3c';
+            ctx.beginPath(); ctx.moveTo(0, -10); ctx.lineTo(8, -18); ctx.lineTo(-2, -14); ctx.fill();
+        } else if (this.charType === 'rogue') {
+            // Hood shadow
+            ctx.fillStyle = 'rgba(0,0,0,0.5)';
+            ctx.beginPath(); ctx.arc(0, 0, this.radius, Math.PI, 0); ctx.fill();
+            // Sharp eyes
+            ctx.fillStyle = '#2ecc71';
+            ctx.beginPath(); ctx.moveTo(-6, -2); ctx.lineTo(-2, 0); ctx.lineTo(-6, 2); ctx.fill();
+            ctx.beginPath(); ctx.moveTo(6, -2); ctx.lineTo(2, 0); ctx.lineTo(6, 2); ctx.fill();
+        } else if (this.charType === 'mage') {
+            // Pointy Hat
+            ctx.fillStyle = '#8e44ad';
+            ctx.beginPath();
+            ctx.moveTo(-12, 0);
+            ctx.lineTo(0, -22);
+            ctx.lineTo(12, 0);
+            ctx.fill();
+            // Hat band
+            ctx.fillStyle = '#f1c40f';
+            ctx.fillRect(-10, -4, 20, 3);
+            // Magic particles around mage
+            if (gameTime % 0.5 < 0.1) {
+                gameState.particles.push(new Particle(this.x + (Math.random() - 0.5) * 30, this.y + (Math.random() - 0.5) * 30, '#9b59b6', 1, Math.random() * Math.PI * 2, 20));
+            }
+        }
+
+        ctx.restore();
+        this.weapons.forEach(w => w.draw(ctx));
     }
     takeDamage(amt, am, onEnd) { const d = Math.max(1, amt - this.armor); this.hp -= d; am.playSFX('hurt'); if (this.hp <= 0) { this.hp = 0; onEnd(); } }
     hasWeapon(type) { return this.weapons.some(w => w.type === type); }
