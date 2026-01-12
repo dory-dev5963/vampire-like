@@ -28,9 +28,9 @@ const STAGES = {
 };
 
 const CHARACTERS = {
-    knight: { hp: 150, armor: 2, magnetRadius: 25, attackDamage: 1.0, attackFrequency: 1.0, moveSpeed: 2.5, attackSpeed: 1.0, projSpeed: 1.0, rerolls: 2, color: '#3498db' },
-    rogue: { hp: 70, armor: 0, magnetRadius: 50, attackDamage: 1.0, attackFrequency: 1.1, moveSpeed: 4.0, attackSpeed: 1.2, projSpeed: 1.2, rerolls: 4, color: '#2ecc71' },
-    mage: { hp: 80, armor: 0, magnetRadius: 35, attackDamage: 1.2, attackFrequency: 1.3, moveSpeed: 3.0, attackSpeed: 1.0, projSpeed: 0.8, rerolls: 2, color: '#9b59b6' }
+    knight: { hp: 200, armor: 5, magnetRadius: 20, attackDamage: 1.1, attackFrequency: 0.9, moveSpeed: 2.2, attackSpeed: 1.0, projSpeed: 1.0, rerolls: 2, color: '#3498db' },
+    rogue: { hp: 60, armor: 1, magnetRadius: 80, attackDamage: 0.8, attackFrequency: 1.5, moveSpeed: 4.8, attackSpeed: 1.2, projSpeed: 1.2, rerolls: 6, color: '#2ecc71' },
+    mage: { hp: 50, armor: 1, magnetRadius: 40, attackDamage: 1.8, attackFrequency: 1.6, moveSpeed: 3.2, attackSpeed: 1.0, projSpeed: 0.8, rerolls: 3, color: '#9b59b6' }
 };
 
 const RARITIES = {
