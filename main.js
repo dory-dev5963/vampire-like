@@ -122,6 +122,7 @@ const TRANSLATIONS = {
     }
 };
 
+
 let currentLang = 'ja';
 function t(key) { return TRANSLATIONS[currentLang][key] || key; }
 function updateTexts() {
