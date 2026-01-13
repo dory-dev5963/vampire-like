@@ -306,6 +306,8 @@ button:hover {
     background: linear-gradient(to top, rgba(0, 0, 0, 0.9), transparent);
     pointer-events: none;
     transition: filter 0.3s;
+    position: relative;
+    z-index: 5;
 }
 
 .bar-container {
@@ -822,5 +824,26 @@ input[type="range"]::-webkit-slider-thumb {
     }
     50% {
         opacity: 0.6;
+    }
+}
+
+/* Treasure animations */
+@keyframes flashFade {
+    0% {
+        opacity: 0.6;
+    }
+    100% {
+        opacity: 0;
+    }
+}
+
+@keyframes rewardSlideIn {
+    0% {
+        opacity: 0;
+        transform: translateY(20px) scale(0.9);
+    }
+    100% {
+        opacity: 1;
+        transform: translateY(0) scale(1);
     }
 }

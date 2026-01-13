@@ -27,6 +27,11 @@ const ENEMY_TYPES = [
     { color: '#c0392b', speed: 1.5, hp: 2000, radius: 20, damage: 60, exp: 2000 } // 270-300s
 ];
 
+const BOSS_TYPES = {
+    minute_boss: { color: '#ff6b6b', speed: 0.8, hp: 500, radius: 35, damage: 30, exp: 500, isBoss: true },
+    final_boss: { color: '#ff0000', speed: 1.0, hp: 3000, radius: 50, damage: 50, exp: 0, isBoss: true, isFinalBoss: true }
+};
+
 const STAGES = {
     forest: { id: 'forest', mult: 1.0, bgColor: '#1a2e1a', color: '#2ecc71' },
     library: { id: 'library', mult: 1.5, bgColor: '#1a1a2e', color: '#3498db' },
@@ -269,6 +274,87 @@ class DamageNumber {
     draw(ctx) { ctx.fillStyle = `rgba(255, ${this.colorStr}, ${this.alpha})`; ctx.font = 'bold 20px sans-serif'; ctx.strokeStyle = `rgba(0, 0, 0, ${this.alpha})`; ctx.lineWidth = 3; ctx.textAlign = 'center'; ctx.strokeText(this.value, this.x, this.y); ctx.fillText(this.value, this.x, this.y); }
 }
 
+class TreasureChest {
+    constructor(x, y, rewardCount) {
+        this.x = x; this.y = y; this.radius = 25; this.rewardCount = rewardCount;
+        this.pulseTimer = 0; this.collected = false;
+        this.color = rewardCount === 5 ? '#f1c40f' : rewardCount === 3 ? '#3498db' : '#95a5a6';
+        this.sparkleTimer = 0;
+    }
+    draw(ctx) {
+        if (this.collected) return; // Don't draw collected chests
+        this.pulseTimer += 0.15;
+        this.sparkleTimer += 0.1;
+        const pulse = Math.sin(this.pulseTimer) * 4;
+        const r = this.radius + pulse;
+        
+        // Strong outer glow
+        const outerGrad = ctx.createRadialGradient(this.x, this.y, 0, this.x, this.y, r * 3);
+        outerGrad.addColorStop(0, this.color + 'CC');
+        outerGrad.addColorStop(0.5, this.color + '66');
+        outerGrad.addColorStop(1, 'transparent');
+        ctx.fillStyle = outerGrad;
+        ctx.beginPath();
+        ctx.arc(this.x, this.y, r * 3, 0, Math.PI * 2);
+        ctx.fill();
+        
+        // Inner glow
+        const innerGrad = ctx.createRadialGradient(this.x, this.y, 0, this.x, this.y, r * 1.5);
+        innerGrad.addColorStop(0, this.color);
+        innerGrad.addColorStop(1, 'transparent');
+        ctx.fillStyle = innerGrad;
+        ctx.beginPath();
+        ctx.arc(this.x, this.y, r * 1.5, 0, Math.PI * 2);
+        ctx.fill();
+        
+        // Sparkles
+        for (let i = 0; i < 8; i++) {
+            const angle = (i / 8) * Math.PI * 2 + this.sparkleTimer;
+            const dist = r * 2;
+            const sx = this.x + Math.cos(angle) * dist;
+            const sy = this.y + Math.sin(angle) * dist;
+            ctx.fillStyle = this.color;
+            ctx.beginPath();
+            ctx.arc(sx, sy, 2 + Math.sin(this.sparkleTimer * 2 + i) * 1, 0, Math.PI * 2);
+            ctx.fill();
+        }
+        
+        // Chest body (larger)
+        ctx.fillStyle = '#8B4513';
+        ctx.fillRect(this.x - 18, this.y - 12, 36, 24);
+        
+        // Chest lid (larger)
+        ctx.fillStyle = '#A0522D';
+        ctx.fillRect(this.x - 20, this.y - 18, 40, 12);
+        
+        // Lock (larger)
+        ctx.fillStyle = this.color;
+        ctx.beginPath();
+        ctx.arc(this.x, this.y, 6, 0, Math.PI * 2);
+        ctx.fill();
+        
+        // Shine effect
+        ctx.fillStyle = 'rgba(255, 255, 255, 0.6)';
+        ctx.beginPath();
+        ctx.arc(this.x - 4, this.y - 4, 3, 0, Math.PI * 2);
+        ctx.fill();
+        
+        // Sparkles for higher rarity
+        if (this.rewardCount >= 3) {
+            for (let i = 0; i < 3; i++) {
+                const angle = this.pulseTimer * 2 + (i * Math.PI * 2 / 3);
+                const dist = 20 + pulse;
+                const sx = this.x + Math.cos(angle) * dist;
+                const sy = this.y + Math.sin(angle) * dist;
+                ctx.fillStyle = this.color;
+                ctx.beginPath();
+                ctx.arc(sx, sy, 2, 0, Math.PI * 2);
+                ctx.fill();
+            }
+        }
+    }
+}
+
 // --- WEAPON UPGRADES ---
 const WEAPON_UPGRADES = {
     orbit: [
@@ -397,11 +483,14 @@ class WandWeapon {
             if (d < minDist) { minDist = d; target = e; }
         });
 
-        const angle = target ? Math.atan2(target.y - this.owner.y, target.x - this.owner.x) : 0;
-        const dx = Math.cos(angle) * this.projectileSpeed * this.owner.projectileSpeedMult;
-        const dy = Math.sin(angle) * this.projectileSpeed * this.owner.projectileSpeedMult;
+        const baseAngle = target ? Math.atan2(target.y - this.owner.y, target.x - this.owner.x) : 0;
+        const spreadAngle = Math.PI / 8; // 22.5度の広がり
 
         for (let i = 0; i < total; i++) {
+            const offset = total > 1 ? (i - (total - 1) / 2) * (spreadAngle / Math.max(1, total - 1)) : 0;
+            const angle = baseAngle + offset;
+            const dx = Math.cos(angle) * this.projectileSpeed * this.owner.projectileSpeedMult;
+            const dy = Math.sin(angle) * this.projectileSpeed * this.owner.projectileSpeedMult;
             this.projectiles.push({ x: this.owner.x, y: this.owner.y, dx, dy, radius: this.projectileSize, damage: this.damage * this.owner.damageMult });
         }
     }
@@ -631,7 +720,7 @@ class WhipWeapon {
 class MineWeapon {
     constructor(owner) { this.owner = owner; this.cooldown = 120; this.timer = 0; this.radius = 40; this.damage = 30; this.count = 1; this.type = 'mine'; this.level = 1; this.maxLevel = 6; this.mines = []; }
     update() { this.timer++; const effective = this.cooldown / (this.owner.attackFrequency * this.owner.attackSpeed * this.owner.cooldownMult); if (this.timer >= effective) { this.timer = 0; this.fire(); } for (let i = this.mines.length - 1; i >= 0; i--) { const m = this.mines[i]; if (m.exploded) { m.life--; if (m.life <= 0) this.mines.splice(i, 1); } } }
-    fire() { const total = this.count + this.owner.projectileCountBonus; for (let i = 0; i < total; i++) { this.mines.push({ x: this.owner.x, y: this.owner.y, radius: 20, explodeRadius: this.radius * this.owner.areaMult, damage: this.damage * this.owner.damageMult, exploded: false, life: 30 }); } }
+    fire() { const total = this.count + this.owner.projectileCountBonus; for (let i = 0; i < total; i++) { const angle = (i / Math.max(1, total)) * Math.PI * 2; const offsetDist = total > 1 ? 15 : 0; const offsetX = Math.cos(angle) * offsetDist; const offsetY = Math.sin(angle) * offsetDist; this.mines.push({ x: this.owner.x + offsetX, y: this.owner.y + offsetY, radius: 20, explodeRadius: this.radius * this.owner.areaMult, damage: this.damage * this.owner.damageMult, exploded: false, life: 30 }); } }
     draw(ctx) {
         this.mines.forEach(m => {
             if (!m.exploded) {
@@ -681,8 +770,11 @@ class SpearWeapon {
         const total = this.count + this.owner.projectileCountBonus;
         let target = null; let minDist = Infinity;
         gameState.enemies.forEach(e => { const d = Math.hypot(e.x - this.owner.x, e.y - this.owner.y); if (d < minDist) { minDist = d; target = e; } });
-        const angle = target ? Math.atan2(target.y - this.owner.y, target.x - this.owner.x) : 0;
+        const baseAngle = target ? Math.atan2(target.y - this.owner.y, target.x - this.owner.x) : 0;
+        const spreadAngle = Math.PI / 6; // 30度の広がり
         for (let i = 0; i < total; i++) {
+            const offset = total > 1 ? (i - (total - 1) / 2) * (spreadAngle / Math.max(1, total - 1)) : 0;
+            const angle = baseAngle + offset;
             this.projectiles.push({
                 x: this.owner.x, y: this.owner.y,
                 dx: Math.cos(angle) * this.projectileSpeed * this.owner.projectileSpeedMult,
@@ -813,7 +905,10 @@ class Player {
             case 'passive_hp': const old = this.maxHp; this.maxHp *= (1 + u.val); this.hp += (this.maxHp - old); break;
             case 'passive_speed': this.cooldownMult *= (1 - u.val); break;
             case 'passive_area': this.areaMult += u.val; break;
-            case 'passive_amount': this.projectileCountBonus += u.val; break;
+            case 'passive_amount': 
+                this.projectileCountBonus += u.val; 
+                console.log('複写の輪適用: +' + u.val + ', 合計: ' + this.projectileCountBonus);
+                break;
             case 'passive_magnet': this.magnetRadius *= (1 + u.val); break;
             case 'passive_move_speed': this.moveSpeedMult += u.val; break;
             case 'passive_exp': this.expMult += u.val; break;
@@ -826,7 +921,7 @@ class Player {
 }
 
 // --- GAME STATE & ENGINE ---
-const gameState = { player: null, enemies: [], expOrbs: [], projectiles: [], damageNumbers: [], particles: [], showDamageNumbers: true, isPaused: false, selectedCharacter: 'knight', selectedStage: 'forest' };
+const gameState = { player: null, enemies: [], expOrbs: [], projectiles: [], damageNumbers: [], particles: [], treasureChests: [], showDamageNumbers: true, isPaused: false, selectedCharacter: 'knight', selectedStage: 'forest', lastBossSpawnTime: 0, finalBossSpawned: false };
 const canvas = document.getElementById('gameCanvas'); const ctx = canvas.getContext('2d');
 let gameTime = 0, lastTime = 0, nextSpawnTime = 0, loopRunning = false;
 const keys = { w: false, s: false, a: false, d: false, ArrowUp: false, ArrowDown: false, ArrowLeft: false, ArrowRight: false };
@@ -909,6 +1004,20 @@ function onChoiceMade() { document.getElementById('level-up-modal').classList.ad
 
 function spawnEnemy() { const min = Math.min(9, Math.floor(gameTime / 30)); gameState.enemies.push(new Enemy(ENEMY_TYPES[min])); }
 
+function spawnBoss(isFinal = false) {
+    const bossType = isFinal ? BOSS_TYPES.final_boss : BOSS_TYPES.minute_boss;
+    const mult = (gameState.selectedStage ? STAGES[gameState.selectedStage].mult : 1.0);
+    const boss = new Enemy(bossType);
+    boss.hp = bossType.hp * mult;
+    boss.damage = bossType.damage * mult;
+    boss.isBoss = true;
+    boss.isFinalBoss = isFinal;
+    gameState.enemies.push(boss);
+    if (!isFinal) {
+        gameState.lastBossSpawnTime = Math.floor(gameTime / 60) * 60;
+    }
+}
+
 function checkCollisions() {
     const p = gameState.player; if (!p) return;
     for (let i = gameState.enemies.length - 1; i >= 0; i--) {
@@ -927,12 +1036,287 @@ function checkCollisions() {
                 for (let j = 0; j < 5; j++) gameState.particles.push(new Particle(e.x, e.y, e.color, Math.random() * 2 + 1, Math.random() * Math.PI * 2, 20));
             }
         }));
-        if (e.hp <= 0) { gameState.expOrbs.push(new ExpOrb(e.x, e.y, e.exp)); gameState.enemies.splice(i, 1); }
+        if (e.hp <= 0) {
+            if (e.isFinalBoss) {
+                // Final boss defeated - clear game
+                endGame(true);
+                return;
+            } else if (e.isBoss) {
+                // Regular boss - drop treasure chest
+                const rewardCount = calculateTreasureRewards();
+                if (rewardCount > 0) {
+                    gameState.treasureChests.push(new TreasureChest(e.x, e.y, rewardCount));
+                    // Spawn particles
+                    for (let j = 0; j < 20; j++) {
+                        const color = rewardCount === 5 ? '#f1c40f' : rewardCount === 3 ? '#3498db' : '#95a5a6';
+                        gameState.particles.push(new Particle(e.x, e.y, color, Math.random() * 3 + 2, Math.random() * Math.PI * 2, 30));
+                    }
+                }
+            }
+            gameState.expOrbs.push(new ExpOrb(e.x, e.y, e.exp));
+            gameState.enemies.splice(i, 1);
+        }
     }
     for (let i = gameState.expOrbs.length - 1; i >= 0; i--) {
         const o = gameState.expOrbs[i]; if (Math.hypot(p.x - o.x, p.y - o.y) < p.magnetRadius) { p.exp += o.value * p.expMult; audioManager.playSFX('pickup'); if (p.exp >= p.nextLevelExp) { p.level++; p.exp -= p.nextLevelExp; p.nextLevelExp = Math.floor(p.nextLevelExp * 1.2); showLevelUpMenu(); } gameState.expOrbs.splice(i, 1); }
     }
+    
+    // Treasure chest collection
+    for (let i = gameState.treasureChests.length - 1; i >= 0; i--) {
+        const chest = gameState.treasureChests[i];
+        if (!chest.collected && Math.hypot(p.x - chest.x, p.y - chest.y) < p.magnetRadius) {
+            chest.collected = true;
+            // Collect immediately
+            collectTreasure(chest);
+            // Remove chest after collection
+            gameState.treasureChests.splice(i, 1);
+        }
+    }
 }
+
+function createScreenFlash(color) {
+    const canvas = document.getElementById('game-canvas');
+    const flash = document.createElement('div');
+    flash.style.cssText = `
+        position: absolute;
+        top: 0;
+        left: 0;
+        width: 100%;
+        height: 100%;
+        background: ${color};
+        opacity: 0.6;
+        pointer-events: none;
+        z-index: 50;
+        animation: flashFade 0.5s ease-out forwards;
+    `;
+    canvas.parentElement.appendChild(flash);
+    setTimeout(() => flash.remove(), 500);
+}
+
+function animateChestOpen(chest) {
+    // Create burst of particles
+    const burstCount = chest.rewardCount === 5 ? 60 : chest.rewardCount === 3 ? 40 : 20;
+    for (let i = 0; i < burstCount; i++) {
+        const angle = (Math.PI * 2 * i) / burstCount;
+        const speed = 3 + Math.random() * 4;
+        gameState.particles.push(
+            new Particle(chest.x, chest.y, chest.color, speed, angle, 40)
+        );
+    }
+    // Upward particles
+    for (let i = 0; i < 30; i++) {
+        gameState.particles.push(
+            new Particle(
+                chest.x + (Math.random() - 0.5) * 20,
+                chest.y,
+                chest.color,
+                2 + Math.random() * 3,
+                -Math.PI / 2 + (Math.random() - 0.5) * 0.5,
+                60
+            )
+        );
+    }
+    audioManager.playSFX('pickup');
+}
+
+function calculateTreasureRewards() {
+    // Completely random: 1, 3, or 5 rewards
+    const rand = Math.random();
+    if (rand < 0.5) return 1;      // 50% chance
+    if (rand < 0.85) return 3;     // 35% chance
+    return 5;                       // 15% chance
+}
+
+function collectTreasure(chest) {
+    const p = gameState.player;
+    const rewardCount = chest.rewardCount;
+    
+    // Pause game before showing rewards
+    gameState.isPaused = true;
+    
+    // Collect eligible items for upgrade
+    const eligibleItems = [];
+    p.weapons.forEach(w => {
+        if (w.level < w.maxLevel) eligibleItems.push({ type: 'weapon', item: w });
+    });
+    p.skills.forEach(s => {
+        if (s.level < s.maxLevel) eligibleItems.push({ type: 'skill', item: s });
+    });
+    
+    // Store rewards for display
+    const rewards = [];
+    
+    // Upgrade items (up to available count)
+    const upgradeCount = Math.min(rewardCount, eligibleItems.length);
+    for (let i = 0; i < upgradeCount; i++) {
+        const idx = Math.floor(Math.random() * eligibleItems.length);
+        const selected = eligibleItems[idx];
+        
+        if (selected.type === 'weapon') {
+            const oldLevel = selected.item.level;
+            const upgrades = WEAPON_UPGRADES[selected.item.type];
+            const nextUpgrade = upgrades ? upgrades.find(u => u.level === selected.item.level + 1) : null;
+            if (nextUpgrade) {
+                selected.item.upgrade(nextUpgrade.upgrades);
+            } else {
+                selected.item.level++;
+            }
+            rewards.push({
+                type: 'weapon',
+                name: t(selected.item.type + '_weapon'),
+                level: oldLevel + ' → ' + selected.item.level,
+                icon: getIconPath(selected.item.type, false)
+            });
+        } else {
+            const oldLevel = selected.item.level;
+            p.upgradeSkill(selected.item.type);
+            rewards.push({
+                type: 'skill',
+                name: t('skill_' + selected.item.type),
+                level: oldLevel + ' → ' + selected.item.level,
+                icon: getIconPath(selected.item.type, true)
+            });
+        }
+        
+        eligibleItems.splice(idx, 1);
+    }
+    
+    // Remaining rewards become HP healing
+    const remainingRewards = rewardCount - upgradeCount;
+    if (remainingRewards > 0) {
+        const healAmount = Math.floor(p.maxHp * 0.1 * remainingRewards);
+        p.hp = Math.min(p.maxHp, p.hp + healAmount);
+        rewards.push({
+            type: 'heal',
+            name: 'HP回復',
+            level: '+' + healAmount + ' HP (×' + remainingRewards + ')',
+            icon: 'assets/heart.svg'
+        });
+    }
+    
+    updateInventory();
+    
+    // Show reward modal immediately
+    showTreasureRewards(rewards);
+}
+
+function playTreasureEffect(x, y, rewardCount) {
+    const color = rewardCount === 5 ? '#f1c40f' : rewardCount === 3 ? '#3498db' : '#95a5a6';
+    const particleCount = rewardCount === 5 ? 100 : rewardCount === 3 ? 60 : 30;
+    const speed = rewardCount === 5 ? 8 : rewardCount === 3 ? 6 : 4;
+    
+    // Main particle burst
+    for (let i = 0; i < particleCount; i++) {
+        gameState.particles.push(
+            new Particle(x, y, color, Math.random() * speed + 2, Math.random() * Math.PI * 2, 80)
+        );
+    }
+    
+    // Multiple rings for all treasure types
+    const ringCount = rewardCount === 5 ? 3 : rewardCount === 3 ? 2 : 1;
+    for (let ring = 0; ring < ringCount; ring++) {
+        const ringSize = 30 + ring * 10;
+        for (let i = 0; i < ringSize; i++) {
+            const angle = (i / ringSize) * Math.PI * 2;
+            gameState.particles.push(
+                new Particle(x, y, ring === 0 ? '#ffffff' : color, 5 + ring, angle, 50 + ring * 10)
+            );
+        }
+    }
+    
+    // Extra star burst for legendary
+    if (rewardCount === 5) {
+        for (let i = 0; i < 8; i++) {
+            const angle = (i / 8) * Math.PI * 2;
+            for (let j = 0; j < 5; j++) {
+                gameState.particles.push(
+                    new Particle(x, y, '#ffffff', 3 + j, angle + (Math.random() - 0.5) * 0.3, 60)
+                );
+            }
+        }
+    }
+    
+    audioManager.playSFX('levelup');
+}
+
+function showTreasureRewards(rewards) {
+    const modal = document.getElementById('level-up-modal');
+    const choicesDiv = document.getElementById('choices');
+    
+    choicesDiv.innerHTML = '';
+    modal.classList.remove('hidden');
+    
+    // Hide reroll button
+    const rerollContainer = document.getElementById('reroll-container');
+    if (rerollContainer) rerollContainer.classList.add('hidden');
+    
+    // Add title
+    const h2 = modal.querySelector('h2');
+    if (h2) h2.textContent = `宝箱の報酬 (${rewards.length}個獲得！)`;
+    
+    // Display each reward as a level-up option style
+    rewards.forEach((reward, index) => {
+        const btn = document.createElement('div');
+        btn.className = 'level-up-option';
+        
+        // Type-based border colors
+        let borderColor = '#f1c40f';
+        let categoryText = 'REWARD';
+        if (reward.type === 'weapon') {
+            borderColor = '#e74c3c';
+            categoryText = 'WEAPON';
+        } else if (reward.type === 'skill') {
+            borderColor = '#3498db';
+            categoryText = 'SKILL';
+        } else if (reward.type === 'heal') {
+            borderColor = '#2ecc71';
+            categoryText = 'HEAL';
+        }
+        
+        btn.style.borderColor = borderColor;
+        btn.style.opacity = '0';
+        btn.style.transform = 'translateY(20px)';
+        btn.style.animation = `rewardSlideIn 0.5s ease-out ${index * 0.15}s forwards`;
+        btn.style.pointerEvents = 'none';
+        
+        btn.innerHTML = `
+            <img src="${reward.icon}">
+            <div style="flex-grow:1">
+                <div style="display:flex; justify-content:space-between;">
+                    <span style="font-size:12px;color:#aaa;">${categoryText}</span>
+                    <span style="font-size:12px;font-weight:bold;color:${borderColor}">${reward.level}</span>
+                </div>
+                <div style="font-weight:bold;margin-top:2px;font-size:16px;">${reward.name}</div>
+            </div>
+        `;
+        
+        choicesDiv.appendChild(btn);
+    });
+    
+    // Add continue button
+    const continueBtn = document.createElement('div');
+    continueBtn.className = 'level-up-option';
+    continueBtn.style.cssText = 'background: #f1c40f; color: #000; border: 2px solid #f39c12; cursor: pointer; margin-top: 20px; justify-content: center;';
+    continueBtn.innerHTML = '<div style="font-weight:bold; font-size:18px;">✓ 確認</div>';
+    continueBtn.onclick = closeTreasureReward;
+    choicesDiv.appendChild(continueBtn);
+}
+
+window.closeTreasureReward = () => {
+    const modal = document.getElementById('level-up-modal');
+    modal.classList.add('hidden');
+    
+    // Reset title
+    const h2 = modal.querySelector('h2');
+    if (h2) h2.textContent = 'Level Up!';
+    
+    // Resume game
+    gameState.isPaused = false;
+    lastTime = performance.now();
+    
+    updateInventory();
+};
+
 
 function endGame(isCleared = false) {
     loopRunning = false;
@@ -958,10 +1342,27 @@ function endGame(isCleared = false) {
 function loop(timestamp) {
     if (!loopRunning) return; if (gameState.isPaused) { lastTime = timestamp; requestAnimationFrame(loop); return; }
     const dt = (timestamp - lastTime) / 1000; lastTime = timestamp; gameTime += dt;
-    if (gameTime > nextSpawnTime) { if (gameTime >= CLEAR_TIME) { endGame(true); return; } spawnEnemy(); nextSpawnTime = gameTime + Math.max(0.2, 2.0 - (gameTime / 60)); }
+    
+    // Boss spawning logic
+    const currentMinute = Math.floor(gameTime / 60);
+    const lastSpawnMinute = Math.floor(gameState.lastBossSpawnTime / 60);
+    if (currentMinute > lastSpawnMinute && currentMinute > 0 && gameTime < CLEAR_TIME) {
+        spawnBoss(false);
+    }
+    
+    // Final boss spawn at clear time
+    if (gameTime >= CLEAR_TIME && !gameState.finalBossSpawned) {
+        gameState.finalBossSpawned = true;
+        spawnBoss(true);
+        // Stop normal enemy spawning
+        nextSpawnTime = Infinity;
+    }
+    
+    if (gameTime > nextSpawnTime && gameTime < CLEAR_TIME) { spawnEnemy(); nextSpawnTime = gameTime + Math.max(0.2, 2.0 - (gameTime / 60)); }
     ctx.fillStyle = STAGES[gameState.selectedStage].bgColor; ctx.fillRect(0, 0, canvas.width, canvas.height); const p = gameState.player; p.update(keys); p.draw(ctx);
     gameState.enemies.forEach(e => { e.update(p); e.draw(ctx); });
     gameState.expOrbs.forEach(o => o.draw(ctx));
+    gameState.treasureChests.forEach(chest => chest.draw(ctx));
     gameState.particles.forEach((p, i) => { p.update(); p.draw(ctx); if (p.life <= 0) gameState.particles.splice(i, 1); });
     gameState.damageNumbers.forEach((d, i) => { d.update(); d.draw(ctx); if (d.life <= 0) gameState.damageNumbers.splice(i, 1); });
     checkCollisions(); updateUI(); requestAnimationFrame(loop);
@@ -999,23 +1400,6 @@ window.goToStageSelect = () => {
         }
     });
 };
-window.backToTitle = () => {
-    document.getElementById('stage-select-screen').classList.add('hidden');
-    document.getElementById('character-select-screen').classList.add('hidden');
-    document.getElementById('start-screen').classList.add('hidden');
-    document.getElementById('title-screen').classList.remove('hidden');
-    audioManager.playSFX('click');
-};
-window.backToStageSelect = () => {
-    document.getElementById('character-select-screen').classList.add('hidden');
-    document.getElementById('stage-select-screen').classList.remove('hidden');
-    audioManager.playSFX('click');
-};
-window.backToCharacterSelect = () => {
-    document.getElementById('start-screen').classList.add('hidden');
-    document.getElementById('character-select-screen').classList.remove('hidden');
-    audioManager.playSFX('click');
-};
 window.selectStage = (stage) => {
     gameState.selectedStage = stage;
     document.getElementById('stage-select-screen').classList.add('hidden');
@@ -1023,7 +1407,7 @@ window.selectStage = (stage) => {
 };
 window.goToCharacterSelect = () => { document.getElementById('title-screen').classList.add('hidden'); document.getElementById('character-select-screen').classList.remove('hidden'); audioManager.init(); };
 window.selectCharacter = (char) => { gameState.selectedCharacter = char; document.getElementById('character-select-screen').classList.add('hidden'); document.getElementById('start-screen').classList.remove('hidden'); audioManager.startBGM(); };
-window.startGame = (type) => { document.getElementById('start-screen').classList.add('hidden'); gameState.player = new Player(type, gameState.selectedCharacter); gameState.enemies = []; gameState.expOrbs = []; gameState.damageNumbers = []; gameTime = 0; nextSpawnTime = 1; lastTime = performance.now(); loopRunning = true; updateInventory(); requestAnimationFrame(loop); };
+window.startGame = (type) => { document.getElementById('start-screen').classList.add('hidden'); gameState.player = new Player(type, gameState.selectedCharacter); gameState.enemies = []; gameState.expOrbs = []; gameState.treasureChests = []; gameState.damageNumbers = []; gameState.particles = []; gameState.lastBossSpawnTime = 0; gameState.finalBossSpawned = false; gameTime = 0; nextSpawnTime = 1; lastTime = performance.now(); loopRunning = true; updateInventory(); requestAnimationFrame(loop); };
 window.toggleSettings = () => { document.getElementById('settings-modal').classList.toggle('hidden'); document.body.classList.toggle('settings-active'); const btn = document.getElementById('btn-toggle-dmg'); if (btn) btn.innerText = gameState.showDamageNumbers ? t('settings_hide_dmg') : t('settings_show_dmg'); };
 window.toggleDamageNumbers = () => { gameState.showDamageNumbers = !gameState.showDamageNumbers; const btn = document.getElementById('btn-toggle-dmg'); if (btn) btn.innerText = gameState.showDamageNumbers ? t('settings_hide_dmg') : t('settings_show_dmg'); };
 window.changeLang = (lang) => { currentLang = lang; updateTexts(); };
