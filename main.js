@@ -260,7 +260,7 @@ class ExpOrb {
         else if (value >= 10) { this.color = '#3498db'; this.radius = 5; }
         else { this.color = '#2ecc71'; }
     }
-    draw(ctx) { ctx.fillStyle = this.color; ctx.beginPath(); ctx.arc(this.x, this.y, this.radius, 0, Math.PI * 2); ctx.fill(); ctx.strokeStyle = 'white'; ctx.lineWidth = 1; ctx.stroke(); }
+    draw(ctx) { ctx.globalAlpha = 0.5; ctx.fillStyle = this.color; ctx.beginPath(); ctx.arc(this.x, this.y, this.radius, 0, Math.PI * 2); ctx.fill(); ctx.strokeStyle = 'white'; ctx.lineWidth = 1; ctx.stroke(); ctx.globalAlpha = 1.0; }
 }
 
 class DamageNumber {
