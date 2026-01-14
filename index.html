@@ -6,6 +6,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Vampire Like Game</title>
     <link rel="stylesheet" href="style.css">
+    <link rel="stylesheet" href="evolution-guide.css">
 </head>
 
 <body>
@@ -66,9 +67,22 @@
                 <div class="title-menu">
                     <button class="menu-btn primary" onclick="goToStageSelect()" data-i18n="start_game">START
                         GAME</button>
+                    <button class="menu-btn" onclick="toggleEvolutionGuide()" data-i18n="evolution_guide">進化一覧</button>
                     <button class="menu-btn" onclick="toggleLibrary()" data-i18n="library">Library</button>
                     <button class="menu-btn" onclick="toggleSettings()" data-i18n="settings">Settings</button>
                 </div>
+            </div>
+
+            <!-- Evolution Guide Screen -->
+            <div id="evolution-guide-screen" class="hidden">
+                <h2>武器進化一覧</h2>
+                <div class="evolution-guide-intro">
+                    <p>武器とスキルが両方レベル6に達し、宝箱を開けると武器が進化します！</p>
+                </div>
+                <div id="evolution-list" class="evolution-list">
+                    <!-- Will be populated by JavaScript -->
+                </div>
+                <button class="back-btn" onclick="toggleEvolutionGuide()">戻る</button>
             </div>
 
             <!-- Stage Selection Screen -->

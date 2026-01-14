@@ -61,7 +61,7 @@ const WEAPON_RARITIES = {
 const TRANSLATIONS = {
     en: {
         orbit_weapon: "Orbit", orbit_desc: "Rotating defensive orbs", wand_weapon: "Magic Wand", wand_desc: "Shoots nearest enemy", aura_weapon: "Aura", aura_desc: "Damages area around you",
-        settings: "Settings", language: "Language / 言語", library: "Library", weapons: "Weapons", skills: "Skills", close: "Close", time: "Time: ", level: "Level: ", hp: "HP", exp: "EXP",
+        settings: "Settings", language: "Language / 言語", library: "Library", weapons: "Weapons", skills: "Skills", close: "Close", time: "Time: ", level: "Level: ", hp: "HP", exp: "EXP", evolution_guide: "Evolution Guide",
         game_over: "GAME OVER", game_clear: "GAME CLEAR!", survived: "Survived: ", cleared: "5 Minutes Achieved!", retry: "Retry", level_up: "Level Up!", heal: "Heal 50 Max HP",
         up_dmg: "Weapon Damage Up", up_hp: "Max HP +20", add_orb: "Add Orb (+1)", up_orb_spd: "Orb Speed Up", add_proj: "Add Projectile (+1)", up_fire: "Fire Rate Up",
         up_aura_size: "Aura Size Up", up_aura_dmg: "Aura Dmg Frequency Up", up_magnet: "Magnet Radius Up", knife_weapon: "Knife", knife_desc: "Fast throwing knives",
@@ -94,7 +94,7 @@ const TRANSLATIONS = {
     },
     ja: {
         orbit_weapon: "オービット", orbit_desc: "周囲を回転する防御オーブ", wand_weapon: "マジックワンド", wand_desc: "近くの敵を攻撃", aura_weapon: "オーラ", aura_desc: "周囲のエリアにダメージ",
-        settings: "設定", language: "言語 / Language", library: "ライブラリ", weapons: "武器", skills: "スキル", close: "閉じる", time: "時間: ", level: "レベル: ", hp: "体力", exp: "経験値",
+        settings: "設定", language: "言語 / Language", library: "ライブラリ", weapons: "武器", skills: "スキル", close: "閉じる", time: "時間: ", level: "レベル: ", hp: "体力", exp: "経験値", evolution_guide: "進化一覧",
         game_over: "ゲームオーバー", game_clear: "ゲームクリア！", survived: "生存時間: ", cleared: "5分間生存達成！", retry: "リトライ", level_up: "レベルアップ!", heal: "最大HPの50回復",
         up_dmg: "武器ダメージ強化", up_hp: "最大HP増加 (+20)", add_orb: "オーブ追加 (+1)", up_orb_spd: "オーブ速度上昇", add_proj: "弾数追加 (+1)", up_fire: "発射速度上昇",
         up_aura_size: "オーラ範囲拡大", up_aura_dmg: "オーラダメージ頻度上昇", up_magnet: "経験値回収範囲拡大", knife_weapon: "ナイフ", knife_desc: "高速投げナイフ",
@@ -425,6 +425,22 @@ const SKILL_UPGRADES = {
 const ALL_WEAPON_TYPES = ['orbit', 'wand', 'aura', 'knife', 'holy_water', 'lightning', 'cross', 'axe', 'whip', 'fire_wand', 'mine', 'spear'];
 const ALL_SKILL_TYPES = ['muscle', 'heart', 'tome', 'scope', 'duplicator', 'magnet', 'wings', 'crown', 'armor', 'pummarola', 'bracer', 'spellbinder'];
 
+// Weapon Evolution Mappings
+const WEAPON_EVOLUTIONS = {
+    orbit: { skill: 'duplicator', evolved: 'celestial_orbit', name: '天体オービット' },
+    wand: { skill: 'tome', evolved: 'arcane_wand', name: '秘術の杖' },
+    aura: { skill: 'scope', evolved: 'divine_aura', name: '神聖オーラ' },
+    knife: { skill: 'wings', evolved: 'deadly_blade', name: '致命の刃' },
+    holy_water: { skill: 'spellbinder', evolved: 'blessed_flood', name: '祝福の洪水' },
+    lightning: { skill: 'muscle', evolved: 'thunder_storm', name: '雷嵐' },
+    cross: { skill: 'bracer', evolved: 'holy_boomerang', name: '聖なるブーメラン' },
+    axe: { skill: 'armor', evolved: 'great_axe', name: '大斧' },
+    whip: { skill: 'heart', evolved: 'dragon_whip', name: '竜の鞭' },
+    fire_wand: { skill: 'crown', evolved: 'inferno', name: '業火' },
+    mine: { skill: 'magnet', evolved: 'mine_field', name: '地雷原' },
+    spear: { skill: 'pummarola', evolved: 'javelin', name: '投槍' }
+};
+
 function applyUpgrade(weapon, upgradeInfo) {
     switch (upgradeInfo.type) {
         case 'passive_damage': weapon.damage *= (1 + upgradeInfo.val); break;
@@ -469,6 +485,82 @@ class OrbitWeapon {
     }
     getHitboxes() { const boxes = []; const total = this.projectileCount + this.owner.projectileCountBonus; for (let i = 0; i < total; i++) { const currentAngle = this.angle + (i * Math.PI * 2) / total; boxes.push({ x: this.owner.x + Math.cos(currentAngle) * (this.radius * this.owner.areaMult), y: this.owner.y + Math.sin(currentAngle) * (this.radius * this.owner.areaMult), radius: this.projectileRadius, damage: this.damage * this.owner.damageMult }); } return boxes; }
     upgrade(custom) { if (this.level >= this.maxLevel) return; this.level++; (custom || WEAPON_UPGRADES[this.type].find(u => u.level === this.level)?.upgrades || []).forEach(u => applyUpgrade(this, u)); }
+}
+
+// === EVOLVED WEAPONS ===
+class CelestialOrbitWeapon {
+    constructor(owner) {
+        this.owner = owner;
+        this.radius = 80;
+        this.projectileRadius = 15;
+        this.angle = 0;
+        this.projectileCount = 6;
+        this.rotationSpeed = 0.08;
+        this.damage = 30;
+        this.type = 'celestial_orbit';
+        this.level = 1;
+        this.maxLevel = 1; // No level ups
+        this.particleTimer = 0;
+    }
+    update() {
+        this.angle += this.rotationSpeed * this.owner.attackFrequency * this.owner.attackSpeed;
+        this.particleTimer++;
+    }
+    draw(ctx) {
+        const total = this.projectileCount + this.owner.projectileCountBonus;
+        for (let i = 0; i < total; i++) {
+            const currentAngle = this.angle + (i * Math.PI * 2) / total;
+            const x = this.owner.x + Math.cos(currentAngle) * (this.radius * this.owner.areaMult);
+            const y = this.owner.y + Math.sin(currentAngle) * (this.radius * this.owner.areaMult);
+
+            // Star-like glow effect
+            const grad = ctx.createRadialGradient(x, y, 0, x, y, this.projectileRadius * 3);
+            grad.addColorStop(0, '#f1c40f');
+            grad.addColorStop(0.3, '#3498db');
+            grad.addColorStop(1, 'transparent');
+            ctx.fillStyle = grad;
+            ctx.beginPath();
+            ctx.arc(x, y, this.projectileRadius * 3, 0, Math.PI * 2);
+            ctx.fill();
+
+            // Bright core with star shape
+            ctx.fillStyle = '#ffffff';
+            ctx.shadowBlur = 15;
+            ctx.shadowColor = '#f1c40f';
+            ctx.beginPath();
+            for (let s = 0; s < 5; s++) {
+                const starAngle = (s / 5) * Math.PI * 2 + this.angle * 2;
+                const starRadius = s % 2 === 0 ? this.projectileRadius : this.projectileRadius * 0.5;
+                const sx = x + Math.cos(starAngle) * starRadius;
+                const sy = y + Math.sin(starAngle) * starRadius;
+                if (s === 0) ctx.moveTo(sx, sy);
+                else ctx.lineTo(sx, sy);
+            }
+            ctx.closePath();
+            ctx.fill();
+            ctx.shadowBlur = 0;
+
+            // Trailing particles (controlled rate)
+            if (this.particleTimer % 3 === 0 && Math.random() > 0.7) {
+                gameState.particles.push(new Particle(x, y, Math.random() > 0.5 ? '#f1c40f' : '#3498db', Math.random() * 2, Math.random() * Math.PI * 2, 30));
+            }
+        }
+    }
+    getHitboxes() {
+        const boxes = [];
+        const total = this.projectileCount + this.owner.projectileCountBonus;
+        for (let i = 0; i < total; i++) {
+            const currentAngle = this.angle + (i * Math.PI * 2) / total;
+            boxes.push({
+                x: this.owner.x + Math.cos(currentAngle) * (this.radius * this.owner.areaMult),
+                y: this.owner.y + Math.sin(currentAngle) * (this.radius * this.owner.areaMult),
+                radius: this.projectileRadius,
+                damage: this.damage * this.owner.damageMult
+            });
+        }
+        return boxes;
+    }
+    upgrade(custom) { /* No upgrades for evolved weapons */ }
 }
 
 class WandWeapon {
@@ -555,7 +647,7 @@ class HolyWaterWeapon {
     constructor(owner) { this.owner = owner; this.cooldown = 120; this.timer = 0; this.duration = 180; this.radius = 40; this.damage = 10; this.throwSpeed = 8; this.count = 1; this.type = 'holy_water'; this.level = 1; this.maxLevel = 6; this.zones = []; this.projectiles = []; }
     update() { this.timer++; const effective = this.cooldown / (this.owner.attackFrequency * this.owner.attackSpeed * this.owner.cooldownMult); if (this.timer >= effective) { this.timer = 0; this.fire(); } for (let i = this.projectiles.length - 1; i >= 0; i--) { const p = this.projectiles[i]; p.x += p.dx; p.y += p.dy; p.life--; if (p.life <= 0) { this.zones.push({ x: p.x, y: p.y, radius: this.radius * this.owner.areaMult, life: this.duration * this.owner.durationMult, maxLife: this.duration * this.owner.durationMult, damage: this.damage * this.owner.damageMult }); this.projectiles.splice(i, 1); } } for (let i = this.zones.length - 1; i >= 0; i--) { const z = this.zones[i]; z.life--; if (z.life <= 0) this.zones.splice(i, 1); } }
     fire() { const total = this.count + this.owner.projectileCountBonus; for (let i = 0; i < total; i++) { const angle = Math.random() * Math.PI * 2; const dist = 100 + Math.random() * 100; const travelTime = Math.max(5, 30 / this.owner.projectileSpeedMult); this.projectiles.push({ x: this.owner.x, y: this.owner.y, dx: (dist * Math.cos(angle)) / travelTime, dy: (dist * Math.sin(angle)) / travelTime, life: travelTime }); } }
-    draw(ctx) { ctx.fillStyle = '#3498db'; this.projectiles.forEach(p => { ctx.beginPath(); ctx.arc(p.x, p.y, 5, 0, Math.PI * 2); ctx.fill(); }); this.zones.forEach(z => { const alpha = (z.life / z.maxLife) * 0.6; ctx.fillStyle = `rgba(231, 76, 60, ${alpha})`; ctx.beginPath(); ctx.arc(z.x, z.y, z.radius, 0, Math.PI * 2); ctx.fill(); }); }
+    draw(ctx) { ctx.fillStyle = '#3498db'; this.projectiles.forEach(p => { ctx.beginPath(); ctx.arc(p.x, p.y, 5, 0, Math.PI * 2); ctx.fill(); }); this.zones.forEach(z => { const alpha = (z.life / z.maxLife) * 0.6; ctx.fillStyle = `rgba(155, 89, 182, ${alpha})`; ctx.beginPath(); ctx.arc(z.x, z.y, z.radius, 0, Math.PI * 2); ctx.fill(); }); }
     getHitboxes() { return this.zones; }
     upgrade(custom) { if (this.level >= this.maxLevel) return; this.level++; (custom || WEAPON_UPGRADES[this.type].find(u => u.level === this.level)?.upgrades || []).forEach(u => applyUpgrade(this, u)); }
 }
@@ -723,10 +815,10 @@ class MineWeapon {
     draw(ctx) {
         this.mines.forEach(m => {
             if (!m.exploded) {
-                ctx.fillStyle = '#e74c3c'; ctx.beginPath(); ctx.arc(m.x, m.y, 8 + Math.sin(gameTime * 10) * 2, 0, Math.PI * 2); ctx.fill();
+                ctx.fillStyle = '#34495e'; ctx.beginPath(); ctx.arc(m.x, m.y, 8 + Math.sin(gameTime * 10) * 2, 0, Math.PI * 2); ctx.fill();
             } else {
                 const grad = ctx.createRadialGradient(m.x, m.y, 0, m.x, m.y, m.explodeRadius);
-                grad.addColorStop(0, 'rgba(255,255,255,0.8)'); grad.addColorStop(0.3, '#e74c3c'); grad.addColorStop(1, 'transparent');
+                grad.addColorStop(0, 'rgba(255,200,0,0.8)'); grad.addColorStop(0.3, '#e67e22'); grad.addColorStop(1, 'transparent');
                 ctx.fillStyle = grad; ctx.beginPath(); ctx.arc(m.x, m.y, m.explodeRadius, 0, Math.PI * 2); ctx.fill();
             }
         });
@@ -812,6 +904,9 @@ function createWeapon(type, owner) {
         case 'knife': return new KnifeWeapon(owner); case 'holy_water': return new HolyWaterWeapon(owner); case 'lightning': return new LightningWeapon(owner);
         case 'cross': return new CrossWeapon(owner); case 'axe': return new AxeWeapon(owner); case 'whip': return new WhipWeapon(owner);
         case 'fire_wand': return new FireWandWeapon(owner); case 'mine': return new MineWeapon(owner); case 'spear': return new SpearWeapon(owner);
+        // Evolved weapons
+        case 'celestial_orbit': return new CelestialOrbitWeapon(owner);
+        // TODO: Add other evolved weapons
     }
     return null;
 }
@@ -890,7 +985,17 @@ class Player {
     }
     takeDamage(amt, am, onEnd) { const d = Math.max(1, amt - this.armor); this.hp -= d; am.playSFX('hurt'); if (this.hp <= 0) { this.hp = 0; onEnd(); } }
     hasWeapon(type) { return this.weapons.some(w => w.type === type); }
-    addWeapon(type) { if (this.weapons.length < this.maxWeapons && !this.hasWeapon(type)) this.weapons.push(createWeapon(type, this)); }
+    addWeapon(type) {
+        // Check if it's an evolved weapon
+        const isEvolved = Object.values(WEAPON_EVOLUTIONS).some(evo => evo.evolved === type);
+        
+        if (isEvolved) {
+            // Evolved weapons can be added even if max weapons reached (replacing the base weapon)
+            this.weapons.push(createWeapon(type, this));
+        } else if (this.weapons.length < this.maxWeapons && !this.hasWeapon(type)) {
+            this.weapons.push(createWeapon(type, this));
+        }
+    }
     hasSkill(type) { return this.skills.some(s => s.type === type); }
     addSkill(type) { if (this.skills.length < this.maxSkills && !this.hasSkill(type)) { this.skills.push({ type, level: 1, maxLevel: 6 }); this.applySkillStat(SKILL_UPGRADES[type].find(u => u.level === 1).upgrades[0]); } }
     upgradeSkill(type, custom) {
@@ -1162,12 +1267,39 @@ function getUpgradeDescription(upgrades) {
     return descriptions.filter(d => d).join(', ');
 }
 
+function checkWeaponEvolutions(player) {
+    const evolutions = [];
+    player.weapons.forEach(weapon => {
+        if (weapon.level >= 6) { // Max level
+            const evolution = WEAPON_EVOLUTIONS[weapon.type];
+            if (evolution) {
+                const skill = player.skills.find(s => 
+                    s.type === evolution.skill && s.level >= 6
+                );
+                if (skill) {
+                    evolutions.push({
+                        weaponType: weapon.type,
+                        evolvedType: evolution.evolved,
+                        evolvedName: evolution.name,
+                        weapon: weapon,
+                        skill: skill
+                    });
+                }
+            }
+        }
+    });
+    return evolutions;
+}
+
 function collectTreasure(chest) {
     const p = gameState.player;
     const rewardCount = chest.rewardCount;
     
     // Pause game before showing rewards
     gameState.isPaused = true;
+    
+    // Check for weapon evolutions first
+    const possibleEvolutions = checkWeaponEvolutions(p);
     
     // Collect eligible items for upgrade
     const eligibleItems = [];
@@ -1180,6 +1312,18 @@ function collectTreasure(chest) {
     
     // Store rewards for display
     const rewards = [];
+    
+    // Add evolutions as rewards (if any)
+    possibleEvolutions.forEach(evo => {
+        rewards.push({
+            type: 'evolution',
+            name: evo.evolvedName,
+            level: 'EVOLUTION!',
+            upgradeDesc: `${t(evo.weaponType + '_weapon')} + ${t('skill_' + evo.skill.type)} の融合`,
+            icon: getIconPath(evo.weaponType, false),
+            evolution: evo
+        });
+    });
     
     // Upgrade items (up to available count)
     const upgradeCount = Math.min(rewardCount, eligibleItems.length);
@@ -1307,7 +1451,12 @@ function showTreasureRewards(rewards) {
         // Type-based border colors
         let borderColor = '#f1c40f';
         let categoryText = 'REWARD';
-        if (reward.type === 'weapon') {
+        if (reward.type === 'evolution') {
+            borderColor = '#f1c40f';
+            categoryText = '⚡ EVOLUTION';
+            btn.style.background = 'linear-gradient(135deg, rgba(241, 196, 15, 0.2), rgba(243, 156, 18, 0.2))';
+            btn.style.boxShadow = '0 0 20px rgba(241, 196, 15, 0.5)';
+        } else if (reward.type === 'weapon') {
             borderColor = '#e74c3c';
             categoryText = 'WEAPON';
         } else if (reward.type === 'skill') {
@@ -1350,11 +1499,25 @@ function showTreasureRewards(rewards) {
     continueBtn.className = 'level-up-option';
     continueBtn.style.cssText = 'background: #f1c40f; color: #000; border: 2px solid #f39c12; cursor: pointer; margin-top: 20px; justify-content: center;';
     continueBtn.innerHTML = '<div style="font-weight:bold; font-size:18px;">✓ 確認</div>';
-    continueBtn.onclick = closeTreasureReward;
+    continueBtn.addEventListener('click', function() {
+        console.log('Treasure reward confirmed, resuming game...');
+        closeTreasureReward(rewards);
+    });
     choicesDiv.appendChild(continueBtn);
 }
 
-window.closeTreasureReward = () => {
+window.closeTreasureReward = (rewards) => {
+    console.log('closeTreasureReward called, isPaused:', gameState.isPaused);
+    
+    // Execute evolutions
+    if (rewards) {
+        rewards.forEach(reward => {
+            if (reward.type === 'evolution' && reward.evolution) {
+                evolveWeapon(gameState.player, reward.evolution);
+            }
+        });
+    }
+    
     const modal = document.getElementById('level-up-modal');
     modal.classList.add('hidden');
     
@@ -1362,12 +1525,32 @@ window.closeTreasureReward = () => {
     const h2 = modal.querySelector('h2');
     if (h2) h2.textContent = 'Level Up!';
     
-    // Resume game
-    gameState.isPaused = false;
+    // Show reroll button again
+    const rerollContainer = document.getElementById('reroll-container');
+    if (rerollContainer) rerollContainer.classList.remove('hidden');
+    
+    // Resume game - ensure lastTime is updated to prevent time jump
     lastTime = performance.now();
+    gameState.isPaused = false;
+    
+    console.log('Game resumed, isPaused:', gameState.isPaused);
     
     updateInventory();
 };
+
+function evolveWeapon(player, evolution) {
+    // Find and remove old weapon
+    const weaponIndex = player.weapons.findIndex(w => w.type === evolution.weaponType);
+    if (weaponIndex !== -1) {
+        player.weapons.splice(weaponIndex, 1);
+    }
+    
+    // Add evolved weapon
+    player.addWeapon(evolution.evolvedType);
+    
+    // Play evolution effect
+    audioManager.playSFX('levelup');
+}
 
 
 function endGame(isCleared = false) {
@@ -1507,6 +1690,56 @@ window.toggleLibrary = () => {
     }
     modal.classList.toggle('hidden');
 };
+
+window.toggleEvolutionGuide = () => {
+    const screen = document.getElementById('evolution-guide-screen');
+    const titleScreen = document.getElementById('title-screen');
+    
+    if (screen.classList.contains('hidden')) {
+        // Show evolution guide
+        updateEvolutionGuide();
+        titleScreen.classList.add('hidden');
+        screen.classList.remove('hidden');
+    } else {
+        // Hide evolution guide
+        screen.classList.add('hidden');
+        titleScreen.classList.remove('hidden');
+    }
+};
+
+function updateEvolutionGuide() {
+    const evolutionList = document.getElementById('evolution-list');
+    if (!evolutionList) return;
+    
+    evolutionList.innerHTML = '';
+    
+    // Create evolution cards for each weapon
+    Object.entries(WEAPON_EVOLUTIONS).forEach(([weaponType, evolution]) => {
+        const card = document.createElement('div');
+        card.className = 'evolution-card';
+        
+        const weaponName = t(weaponType + '_weapon') || weaponType;
+        const skillName = t('skill_' + evolution.skill) || evolution.skill;
+        
+        card.innerHTML = `
+            <div class="evolution-card-header">
+                <img src="${getIconPath(weaponType, false)}" class="evolution-icon">
+                <div class="evolution-plus">+</div>
+                <img src="${getIconPath(evolution.skill, true)}" class="evolution-icon">
+                <div class="evolution-arrow">→</div>
+                <div class="evolution-result">
+                    <img src="${getIconPath(weaponType, false)}" class="evolution-icon evolved">
+                    <div class="evolution-star">⚡</div>
+                </div>
+            </div>
+            <div class="evolution-card-body">
+                <div class="evolution-name">${evolution.name}</div>
+            </div>
+        `;
+        
+        evolutionList.appendChild(card);
+    });
+}
 
 // --- INIT ---
 updateTexts();

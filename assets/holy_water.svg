@@ -1,5 +1,13 @@
 <svg width="40" height="40" xmlns="http://www.w3.org/2000/svg">
-  <path d="M10 20 L30 20 L27 35 L13 35 Z" fill="#c0392b" stroke="#e74c3c" stroke-width="2"/>
-  <path d="M20 5 L23 15 L27 12 L20 20 L13 12 L17 15 Z" fill="#e67e22"/>
-  <path d="M15 25 Q20 30 25 25" stroke="#e74c3c" fill="none" stroke-width="2"/>
+  <!-- 聖水瓶のボディ -->
+  <path d="M15 15 L15 32 Q15 36 20 36 Q25 36 25 32 L25 15 Z" fill="#8e44ad" stroke="#9b59b6" stroke-width="2"/>
+  <!-- 瓶の首 -->
+  <rect x="17" y="10" width="6" height="6" fill="#9b59b6" stroke="#8e44ad" stroke-width="1.5"/>
+  <!-- 瓶の蓋 -->
+  <rect x="16" y="8" width="8" height="3" rx="1" fill="#bdc3c7" stroke="#95a5a6" stroke-width="1"/>
+  <!-- 十字架マーク -->
+  <line x1="20" y1="20" x2="20" y2="28" stroke="#ecf0f1" stroke-width="2" stroke-linecap="round"/>
+  <line x1="17" y1="24" x2="23" y2="24" stroke="#ecf0f1" stroke-width="2" stroke-linecap="round"/>
+  <!-- 光の輝き -->
+  <circle cx="18" cy="18" r="1.5" fill="#ffffff" opacity="0.8"/>
 </svg>
