@@ -5,6 +5,18 @@ function getIconPath(type, isSkill) {
     if (PNG_ICONS.includes(type)) return 'assets/' + type + '_icon.png';
     return 'assets/' + type + '.svg';
 }
+// Helper function to get icon for evolved weapons
+function getWeaponIconPath(weaponType) {
+    // Check if it's an evolved weapon - use base weapon icon
+    if (typeof WEAPON_EVOLUTIONS !== 'undefined') {
+        for (const [baseWeapon, evolution] of Object.entries(WEAPON_EVOLUTIONS)) {
+            if (evolution.evolved === weaponType) {
+                return getIconPath(baseWeapon, false);
+            }
+        }
+    }
+    return getIconPath(weaponType, false);
+}
 const GAME_WIDTH = 800;
 const GAME_HEIGHT = 600;
 const CLEAR_TIME = 300;
@@ -906,9 +918,51 @@ function createWeapon(type, owner) {
         case 'fire_wand': return new FireWandWeapon(owner); case 'mine': return new MineWeapon(owner); case 'spear': return new SpearWeapon(owner);
         // Evolved weapons
         case 'celestial_orbit': return new CelestialOrbitWeapon(owner);
+        case 'arcane_wand': return createEvolvedWeapon('wand', 'arcane_wand', owner, { damage: 2, projectileSpeed: 1.5 });
+        case 'divine_aura': return createEvolvedWeapon('aura', 'divine_aura', owner, { damage: 2, radius: 1.5 });
+        case 'deadly_blade': return createEvolvedWeapon('knife', 'deadly_blade', owner, { damage: 2, count: 1.5 });
+        case 'blessed_flood': return createEvolvedWeapon('holy_water', 'blessed_flood', owner, { damage: 2, radius: 1.5 });
+        case 'thunder_storm': return createEvolvedWeapon('lightning', 'thunder_storm', owner, { damage: 2.5, chainCount: 2 });
+        case 'holy_boomerang': return createEvolvedWeapon('cross', 'holy_boomerang', owner, { damage: 2, projectileSpeed: 1.5 });
+        case 'great_axe': return createEvolvedWeapon('axe', 'great_axe', owner, { damage: 2.5, radius: 1.3 });
+        case 'dragon_whip': return createEvolvedWeapon('whip', 'dragon_whip', owner, { damage: 2, radius: 1.5 });
+        case 'inferno': return createEvolvedWeapon('fire_wand', 'inferno', owner, { damage: 3, projectileSize: 1.5 });
+        case 'mine_field': return createEvolvedWeapon('mine', 'mine_field', owner, { damage: 2.5, count: 2 });
+        case 'javelin': return createEvolvedWeapon('spear', 'javelin', owner, { damage: 2, projectileSpeed: 1.5 });
         // TODO: Add other evolved weapons
     }
     return null;
+}
+
+// Helper function to create evolved weapons based on their base weapon
+function createEvolvedWeapon(baseType, evolvedType, owner, multipliers) {
+    const baseWeapon = createWeapon(baseType, owner);
+    if (!baseWeapon) return null;
+    
+    // Apply multipliers to base weapon stats
+    if (multipliers.damage) baseWeapon.damage = Math.floor(baseWeapon.damage * multipliers.damage);
+    if (multipliers.projectileSpeed && baseWeapon.projectileSpeed) {
+        baseWeapon.projectileSpeed *= multipliers.projectileSpeed;
+    }
+    if (multipliers.radius && baseWeapon.radius) {
+        baseWeapon.radius = Math.floor(baseWeapon.radius * multipliers.radius);
+    }
+    if (multipliers.count && baseWeapon.count) {
+        baseWeapon.count = Math.floor(baseWeapon.count * multipliers.count);
+    }
+    if (multipliers.chainCount && baseWeapon.chainCount) {
+        baseWeapon.chainCount = Math.floor(baseWeapon.chainCount * multipliers.chainCount);
+    }
+    if (multipliers.projectileSize && baseWeapon.projectileSize) {
+        baseWeapon.projectileSize = Math.floor(baseWeapon.projectileSize * multipliers.projectileSize);
+    }
+    
+    // Update type and make it max level (no upgrades)
+    baseWeapon.type = evolvedType;
+    baseWeapon.level = 1;
+    baseWeapon.maxLevel = 1;
+    
+    return baseWeapon;
 }
 
 class Player {
@@ -934,7 +988,7 @@ class Player {
         this.x = Math.max(this.radius, Math.min(GAME_WIDTH - this.radius, this.x));
         this.y = Math.max(this.radius, Math.min(GAME_HEIGHT - this.radius, this.y));
         if (this.regenAmount > 0) { this.regenTimer++; if (this.regenTimer >= 60) { this.hp = Math.min(this.maxHp, this.hp + this.regenAmount); this.regenTimer = 0; } }
-        this.weapons.forEach(w => w.update());
+        this.weapons.forEach(w => { if (w) w.update(); });
     }
     draw(ctx) {
         ctx.save();
@@ -986,14 +1040,28 @@ class Player {
     takeDamage(amt, am, onEnd) { const d = Math.max(1, amt - this.armor); this.hp -= d; am.playSFX('hurt'); if (this.hp <= 0) { this.hp = 0; onEnd(); } }
     hasWeapon(type) { return this.weapons.some(w => w.type === type); }
     addWeapon(type) {
+        console.log('addWeapon called with type:', type);
+        console.log('Current weapons count:', this.weapons.length);
+        
         // Check if it's an evolved weapon
         const isEvolved = Object.values(WEAPON_EVOLUTIONS).some(evo => evo.evolved === type);
+        console.log('Is evolved weapon:', isEvolved);
+        
+        const newWeapon = createWeapon(type, this);
+        if (!newWeapon) {
+            console.warn(`Weapon type "${type}" not implemented yet`);
+            return;
+        }
+        
+        console.log('Created weapon:', newWeapon.type);
         
         if (isEvolved) {
             // Evolved weapons can be added even if max weapons reached (replacing the base weapon)
-            this.weapons.push(createWeapon(type, this));
+            console.log('Adding evolved weapon to array');
+            this.weapons.push(newWeapon);
+            console.log('Weapons after push:', this.weapons.map(w => w ? w.type : 'null'));
         } else if (this.weapons.length < this.maxWeapons && !this.hasWeapon(type)) {
-            this.weapons.push(createWeapon(type, this));
+            this.weapons.push(newWeapon);
         }
     }
     hasSkill(type) { return this.skills.some(s => s.type === type); }
@@ -1045,11 +1113,29 @@ function updateUI() {
 
 function updateInventory() {
     const inv = document.getElementById('inventory'); if (!inv || !gameState.player) return; inv.innerHTML = '';
+    console.log('Updating inventory, weapons:', gameState.player.weapons.map(w => w ? w.type : 'null'));
     const createRow = (items, prefix) => {
         const row = document.createElement('div'); row.className = 'inv-row';
         items.forEach(item => {
+            if (!item) return; // Skip null items
             const container = document.createElement('div'); container.style.position = 'relative';
-            const img = document.createElement('img'); img.src = getIconPath(item.type, prefix === 'skill_'); img.className = 'inv-icon';
+            const iconPath = prefix === 'skill_' ? getIconPath(item.type, true) : getWeaponIconPath(item.type);
+            const img = document.createElement('img'); img.src = iconPath; img.className = 'inv-icon';
+            
+            // Check if it's an evolved weapon
+            const isEvolved = prefix !== 'skill_' && Object.values(WEAPON_EVOLUTIONS).some(evo => evo.evolved === item.type);
+            if (isEvolved) {
+                img.style.background = 'linear-gradient(135deg, rgba(241, 196, 15, 0.3), rgba(243, 156, 18, 0.3))';
+                img.style.borderColor = '#f1c40f';
+                img.style.boxShadow = '0 0 10px rgba(241, 196, 15, 0.6)';
+                img.style.border = '2px solid #f1c40f';
+                // Add evolution star indicator
+                const star = document.createElement('div');
+                star.innerHTML = '⚡';
+                star.style.cssText = 'position: absolute; top: -5px; right: -5px; font-size: 16px; text-shadow: 0 0 5px #f1c40f;';
+                container.appendChild(star);
+            }
+            
             img.title = (prefix === 'skill_' ? t(prefix + item.type) : t(item.type + '_weapon')) || item.type;
             const badge = document.createElement('div'); badge.className = 'level-badge'; badge.innerText = 'Lv.' + item.level;
             container.appendChild(img); container.appendChild(badge); row.appendChild(container);
@@ -1539,14 +1625,24 @@ window.closeTreasureReward = (rewards) => {
 };
 
 function evolveWeapon(player, evolution) {
+    console.log('=== Evolution Start ===');
+    console.log('Weapons before:', player.weapons.map(w => w ? w.type : 'null'));
+    console.log('Evolving weapon:', evolution.weaponType, 'to', evolution.evolvedType);
+    
     // Find and remove old weapon
-    const weaponIndex = player.weapons.findIndex(w => w.type === evolution.weaponType);
+    const weaponIndex = player.weapons.findIndex(w => w && w.type === evolution.weaponType);
+    console.log('Found weapon at index:', weaponIndex);
+    
     if (weaponIndex !== -1) {
         player.weapons.splice(weaponIndex, 1);
+        console.log('Removed weapon, weapons after removal:', player.weapons.map(w => w ? w.type : 'null'));
     }
     
     // Add evolved weapon
+    console.log('Adding evolved weapon:', evolution.evolvedType);
     player.addWeapon(evolution.evolvedType);
+    console.log('Weapons after adding evolved:', player.weapons.map(w => w ? w.type : 'null'));
+    console.log('=== Evolution End ===');
     
     // Play evolution effect
     audioManager.playSFX('levelup');
