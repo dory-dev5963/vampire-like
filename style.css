@@ -199,10 +199,17 @@ body.settings-active #bottom-bars {
     -webkit-background-clip: text;
     background-clip: text;
     -webkit-text-fill-color: transparent;
-    margin-bottom: 50px;
+    margin-bottom: 20px;
     text-shadow: 0 5px 15px rgba(231, 76, 60, 0.4);
     animation: floating 3s ease-in-out infinite;
     letter-spacing: 2px;
+}
+
+.version-info {
+    font-size: 14px;
+    color: rgba(255, 255, 255, 0.5);
+    margin-bottom: 30px;
+    letter-spacing: 1px;
 }
 
 @keyframes floating {
