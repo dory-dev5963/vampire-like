@@ -962,6 +962,55 @@ function createEvolvedWeapon(baseType, evolvedType, owner, multipliers) {
     baseWeapon.level = 1;
     baseWeapon.maxLevel = 1;
     
+    // Store original draw method
+    const originalDraw = baseWeapon.draw.bind(baseWeapon);
+    
+    // Enhance draw method with evolved effects
+    baseWeapon.draw = function(ctx) {
+        // Add glow effect
+        ctx.save();
+        ctx.shadowBlur = 15;
+        ctx.shadowColor = '#f1c40f';
+        
+        // Call original draw
+        originalDraw(ctx);
+        
+        ctx.shadowBlur = 0;
+        ctx.restore();
+        
+        // Add sparkle particles occasionally
+        if (gameTime % 0.1 < 0.05) {
+            const sparkleColors = ['#f1c40f', '#ffffff', '#e67e22'];
+            const randomColor = sparkleColors[Math.floor(Math.random() * sparkleColors.length)];
+            
+            // Add particles around weapon owner
+            if (Math.random() > 0.7) {
+                const angle = Math.random() * Math.PI * 2;
+                const distance = 20 + Math.random() * 30;
+                const px = this.owner.x + Math.cos(angle) * distance;
+                const py = this.owner.y + Math.sin(angle) * distance;
+                gameState.particles.push(new Particle(px, py, randomColor, 1.5, Math.random() * Math.PI * 2, 25));
+            }
+            
+            // Add particles to projectiles if they exist
+            if (this.projectiles && this.projectiles.length > 0) {
+                this.projectiles.forEach(proj => {
+                    if (Math.random() > 0.85) {
+                        gameState.particles.push(new Particle(proj.x, proj.y, randomColor, 1, Math.random() * Math.PI * 2, 20));
+                    }
+                });
+            }
+        }
+    };
+    
+    // Store original getHitboxes if it needs to show larger/enhanced hitboxes
+    const originalGetHitboxes = baseWeapon.getHitboxes.bind(baseWeapon);
+    baseWeapon.getHitboxes = function() {
+        const hitboxes = originalGetHitboxes();
+        // Add golden glow effect to hitboxes visualization (damage is already multiplied)
+        return hitboxes;
+    };
+    
     return baseWeapon;
 }
 
@@ -1415,7 +1464,7 @@ function checkWeaponEvolutions(player) {
             const evolution = WEAPON_EVOLUTIONS[weapon.type];
             if (evolution) {
                 const skill = player.skills.find(s => 
-                    s.type === evolution.skill && s.level >= 6
+                    s.type === evolution.skill
                 );
                 if (skill) {
                     evolutions.push({
