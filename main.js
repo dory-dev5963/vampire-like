@@ -1126,6 +1126,42 @@ function calculateTreasureRewards() {
     return 5;                       // 15% chance
 }
 
+function getUpgradeDescription(upgrades) {
+    const descriptions = upgrades.map(u => {
+        switch (u.type) {
+            case 'passive_damage':
+                return `攻撃力 +${Math.round(u.val * 100)}%`;
+            case 'passive_speed':
+                return `攻撃速度 +${Math.round(u.val * 100)}%`;
+            case 'passive_area':
+                return `範囲 +${Math.round(u.val * 100)}%`;
+            case 'passive_proj_speed':
+                return `弾速 +${Math.round(u.val * 100)}%`;
+            case 'passive_duration':
+                return `持続時間 +${Math.round(u.val * 100)}%`;
+            case 'count':
+                return `数量 +${u.val}`;
+            case 'passive_amount':
+                return `数量 +${u.val}`;
+            case 'passive_hp':
+                return `最大HP +${Math.round(u.val * 100)}%`;
+            case 'passive_magnet':
+                return `回収範囲 +${Math.round(u.val * 100)}%`;
+            case 'passive_move_speed':
+                return `移動速度 +${Math.round(u.val * 100)}%`;
+            case 'passive_exp':
+                return `経験値 +${Math.round(u.val * 100)}%`;
+            case 'passive_armor':
+                return `防御力 +${u.val}`;
+            case 'passive_regen':
+                return `HP回復 +${u.val}/秒`;
+            default:
+                return '';
+        }
+    });
+    return descriptions.filter(d => d).join(', ');
+}
+
 function collectTreasure(chest) {
     const p = gameState.player;
     const rewardCount = chest.rewardCount;
@@ -1155,7 +1191,9 @@ function collectTreasure(chest) {
             const oldLevel = selected.item.level;
             const upgrades = WEAPON_UPGRADES[selected.item.type];
             const nextUpgrade = upgrades ? upgrades.find(u => u.level === selected.item.level + 1) : null;
+            let upgradeDesc = '';
             if (nextUpgrade) {
+                upgradeDesc = getUpgradeDescription(nextUpgrade.upgrades);
                 selected.item.upgrade(nextUpgrade.upgrades);
             } else {
                 selected.item.level++;
@@ -1164,15 +1202,23 @@ function collectTreasure(chest) {
                 type: 'weapon',
                 name: t(selected.item.type + '_weapon'),
                 level: oldLevel + ' → ' + selected.item.level,
+                upgradeDesc: upgradeDesc,
                 icon: getIconPath(selected.item.type, false)
             });
         } else {
             const oldLevel = selected.item.level;
+            const skillUpgrades = SKILL_UPGRADES[selected.item.type];
+            const nextUpgrade = skillUpgrades ? skillUpgrades.find(u => u.level === selected.item.level + 1) : null;
+            let upgradeDesc = '';
+            if (nextUpgrade) {
+                upgradeDesc = getUpgradeDescription(nextUpgrade.upgrades);
+            }
             p.upgradeSkill(selected.item.type);
             rewards.push({
                 type: 'skill',
                 name: t('skill_' + selected.item.type),
                 level: oldLevel + ' → ' + selected.item.level,
+                upgradeDesc: upgradeDesc,
                 icon: getIconPath(selected.item.type, true)
             });
         }
@@ -1278,6 +1324,12 @@ function showTreasureRewards(rewards) {
         btn.style.animation = `rewardSlideIn 0.5s ease-out ${index * 0.15}s forwards`;
         btn.style.pointerEvents = 'none';
         
+        // Build description text
+        let descriptionHtml = '';
+        if (reward.upgradeDesc) {
+            descriptionHtml = `<div style="font-size:11px;color:#95a5a6;margin-top:4px;">${reward.upgradeDesc}</div>`;
+        }
+        
         btn.innerHTML = `
             <img src="${reward.icon}">
             <div style="flex-grow:1">
@@ -1286,6 +1338,7 @@ function showTreasureRewards(rewards) {
                     <span style="font-size:12px;font-weight:bold;color:${borderColor}">${reward.level}</span>
                 </div>
                 <div style="font-weight:bold;margin-top:2px;font-size:16px;">${reward.name}</div>
+                ${descriptionHtml}
             </div>
         `;
         
