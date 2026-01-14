@@ -1169,15 +1169,70 @@ function showLevelUpMenu() {
     const getDesc = (upgrades) => upgrades.map(u => t(u.descKey) + ' (' + (['count', 'passive_amount', 'passive_armor'].includes(u.type) ? '+' + u.val : 'x' + (u.val > 0 ? (1 + u.val).toFixed(2) : (1 - u.val).toFixed(2))) + ')').join(', ');
 
     p.skills.forEach(s => { if (s.level < s.maxLevel) { const next = SKILL_UPGRADES[s.type].find(u => u.level === s.level + 1); if (next) { const r = getRandomRarity(false); const sc = scale(next.upgrades, r); options.push({ cat: 'label_skill', r, isNew: false, name: t('upgrade') + ' ' + t('skill_' + s.type) + ' (Lv ' + s.level + '->' + (s.level + 1) + '): ' + getDesc(sc), icon: getIconPath(s.type, true), action: () => { p.upgradeSkill(s.type, sc); onChoiceMade(); } }); } } });
-    if (p.skills.length < p.maxSkills) ALL_SKILL_TYPES.filter(type => !p.hasSkill(type)).forEach(type => { const r = getRandomRarity(false); options.push({ cat: 'label_skill', r, isNew: true, name: t('skill_' + type) + ' (' + t('affects') + t(t('scope_' + type)) + '): ' + t('skill_' + type + '_desc'), icon: getIconPath(type, true), action: () => { p.addSkill(type); onChoiceMade(); } }); });
+    
+    if (p.skills.length < p.maxSkills) {
+        ALL_SKILL_TYPES.filter(type => !p.hasSkill(type)).forEach(type => {
+            const r = getRandomRarity(false);
+            // Check if this skill can evolve with any owned weapon
+            let evolutionPartner = null;
+            for (const [weaponType, evolution] of Object.entries(WEAPON_EVOLUTIONS)) {
+                if (evolution.skill === type && p.hasWeapon(weaponType)) {
+                    evolutionPartner = { type: weaponType, isWeapon: true };
+                    break;
+                }
+            }
+            options.push({
+                cat: 'label_skill',
+                r,
+                isNew: true,
+                name: t('skill_' + type) + ' (' + t('affects') + t(t('scope_' + type)) + '): ' + t('skill_' + type + '_desc'),
+                icon: getIconPath(type, true),
+                evolutionPartner: evolutionPartner,
+                action: () => { p.addSkill(type); onChoiceMade(); }
+            });
+        });
+    }
+    
     p.weapons.forEach(w => { if (w.level < w.maxLevel) { const next = WEAPON_UPGRADES[w.type].find(u => u.level === w.level + 1); if (next) { const r = getRandomRarity(true); const sc = scale(next.upgrades, r); options.push({ cat: 'label_weapon', r, isNew: false, name: t('upgrade') + ' ' + t(w.type + '_weapon') + ' (Lv ' + w.level + '->' + (w.level + 1) + '): ' + getDesc(sc), icon: getIconPath(w.type, false), action: () => { w.upgrade(sc); onChoiceMade(); } }); } } });
-    if (p.weapons.length < p.maxWeapons) ALL_WEAPON_TYPES.filter(type => !p.hasWeapon(type)).forEach(type => { const r = getRandomRarity(true); options.push({ cat: 'label_weapon', r, isNew: true, name: t(type + "_weapon"), icon: getIconPath(type, false), action: () => { p.addWeapon(type); onChoiceMade(); } }); });
+    
+    if (p.weapons.length < p.maxWeapons) {
+        ALL_WEAPON_TYPES.filter(type => !p.hasWeapon(type)).forEach(type => {
+            const r = getRandomRarity(true);
+            // Check if this weapon can evolve with any owned skill
+            let evolutionPartner = null;
+            const evolution = WEAPON_EVOLUTIONS[type];
+            if (evolution && p.hasSkill(evolution.skill)) {
+                evolutionPartner = { type: evolution.skill, isWeapon: false };
+            }
+            options.push({
+                cat: 'label_weapon',
+                r,
+                isNew: true,
+                name: t(type + "_weapon"),
+                icon: getIconPath(type, false),
+                evolutionPartner: evolutionPartner,
+                action: () => { p.addWeapon(type); onChoiceMade(); }
+            });
+        });
+    }
     if (options.length === 0) options.push({ cat: 'label_skill', r: RARITIES.common, isNew: false, name: t("heal"), icon: "assets/heart.svg", action: () => { p.hp = Math.min(p.maxHp, p.hp + 50); onChoiceMade(); } });
 
     options.sort(() => 0.5 - Math.random()).slice(0, 3).forEach(opt => {
         const btn = document.createElement('div'); btn.className = 'level-up-option'; btn.style.borderColor = opt.isNew ? '#ffffff' : opt.r.color;
         const rarityText = opt.isNew ? '<span style="font-size:10px;font-weight:bold;color:#f1c40f;background:rgba(241,196,15,0.2);padding:2px 6px;border-radius:3px;">NEW</span>' : '<span style="font-size:10px;font-weight:bold;color:' + opt.r.color + '">' + t('rarity_' + opt.r.id) + '</span>';
-        btn.innerHTML = '<img src="' + opt.icon + '"><div style="flex-grow:1"><div style="display:flex; justify-content:space-between;"><span style="font-size:12px;color:#aaa;">' + t(opt.cat) + '</span>' + rarityText + '</div><div style="font-weight:bold;margin-top:2px;">' + opt.name + '</div></div>';
+        
+        // Add evolution partner icon if available
+        let evolutionHtml = '';
+        if (opt.evolutionPartner) {
+            const partnerIcon = opt.evolutionPartner.isWeapon ? getIconPath(opt.evolutionPartner.type, false) : getIconPath(opt.evolutionPartner.type, true);
+            evolutionHtml = '<div style="margin-top:8px;display:flex;align-items:center;gap:6px;padding:4px 8px;background:rgba(241,196,15,0.15);border-radius:4px;border:1px solid rgba(241,196,15,0.3);">' +
+                '<span style="font-size:10px;color:#f1c40f;">⚡進化可能:</span>' +
+                '<img src="' + partnerIcon + '" style="width:20px;height:20px;border-radius:3px;border:1px solid rgba(241,196,15,0.5);">' +
+                '<span style="font-size:10px;color:#f1c40f;">' + (opt.evolutionPartner.isWeapon ? t(opt.evolutionPartner.type + '_weapon') : t('skill_' + opt.evolutionPartner.type)) + '</span>' +
+                '</div>';
+        }
+        
+        btn.innerHTML = '<img src="' + opt.icon + '"><div style="flex-grow:1"><div style="display:flex; justify-content:space-between;"><span style="font-size:12px;color:#aaa;">' + t(opt.cat) + '</span>' + rarityText + '</div><div style="font-weight:bold;margin-top:2px;">' + opt.name + '</div>' + evolutionHtml + '</div>';
         btn.onclick = opt.action; choicesDiv.appendChild(btn);
     });
 }
