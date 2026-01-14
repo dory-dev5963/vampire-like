@@ -582,7 +582,6 @@ class LightningWeapon {
                     hit.push(nearest);
                     const dmg = this.damage * player.damageMult;
                     nearest.hp -= dmg;
-                    audioManager.playSFX('hit');
                     if (gameState.showDamageNumbers) gameState.damageNumbers.push(new DamageNumber(nearest.x, nearest.y, dmg));
                     currentSource = nearest;
                 } else break;
@@ -698,7 +697,7 @@ class WhipWeapon {
     constructor(owner) { this.owner = owner; this.cooldown = 60; this.timer = 0; this.range = 100; this.height = 30; this.damage = 15; this.type = 'whip'; this.level = 1; this.maxLevel = 6; this.activeTime = 0; this.direction = 1; }
     update() {
         this.timer++; const effective = this.cooldown / (this.owner.attackFrequency * this.owner.attackSpeed * this.owner.cooldownMult);
-        if (this.timer >= effective) { this.timer = 0; this.activeTime = 10; this.direction = (Math.random() > 0.5 ? 1 : -1); audioManager.playSFX('hit'); } if (this.activeTime > 0) this.activeTime--;
+        if (this.timer >= effective) { this.timer = 0; this.activeTime = 10; this.direction = (Math.random() > 0.5 ? 1 : -1); } if (this.activeTime > 0) this.activeTime--;
     }
     draw(ctx) {
         if (this.activeTime > 0) {
@@ -737,7 +736,7 @@ class MineWeapon {
         this.mines.forEach(m => {
             if (!m.exploded) {
                 gameState.enemies.forEach(e => {
-                    if (Math.hypot(m.x - e.x, m.y - e.y) < m.radius + e.radius) { m.exploded = true; audioManager.playSFX('hit'); }
+                    if (Math.hypot(m.x - e.x, m.y - e.y) < m.radius + e.radius) { m.exploded = true; }
                 });
             } else if (m.life === 30) { hits.push({ x: m.x, y: m.y, radius: m.explodeRadius, damage: m.damage }); }
         });
@@ -783,7 +782,6 @@ class SpearWeapon {
                 trail: []
             });
         }
-        audioManager.playSFX('hit');
     }
     draw(ctx) {
         this.projectiles.forEach(p => {
@@ -1030,13 +1028,14 @@ function checkCollisions() {
                 if (Math.hypot(h.x - e.x, h.y - e.y) < h.radius + e.radius) hit = true;
             }
             if (hit) {
-                const d = h.damage || w.damage * p.damageMult; e.hp -= d; audioManager.playSFX('hit');
+                const d = h.damage || w.damage * p.damageMult; e.hp -= d;
                 if (gameState.showDamageNumbers) gameState.damageNumbers.push(new DamageNumber(e.x, e.y, d));
                 // Hit particles
                 for (let j = 0; j < 5; j++) gameState.particles.push(new Particle(e.x, e.y, e.color, Math.random() * 2 + 1, Math.random() * Math.PI * 2, 20));
             }
         }));
         if (e.hp <= 0) {
+            audioManager.playSFX('hit');
             if (e.isFinalBoss) {
                 // Final boss defeated - clear game
                 endGame(true);
