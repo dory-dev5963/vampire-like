@@ -17,8 +17,8 @@ function getWeaponIconPath(weaponType) {
     }
     return getIconPath(weaponType, false);
 }
-const GAME_WIDTH = 800;
-const GAME_HEIGHT = 600;
+const GAME_WIDTH = 1600;
+const GAME_HEIGHT = 1200;
 const CLEAR_TIME = 300;
 function formatTime(s) {
     const mins = Math.floor(s / 60);
