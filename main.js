@@ -40,11 +40,11 @@ const ENEMY_TYPES = [
 ];
 
 const BOSS_TYPES = {
-    minute_boss_1: { color: '#ff6b6b', speed: 0.8, hp: 1200, radius: 32, damage: 25, exp: 400, isBoss: true, glowIntensity: 0.3 },
-    minute_boss_2: { color: '#ff4757', speed: 0.9, hp: 2400, radius: 36, damage: 35, exp: 600, isBoss: true, glowIntensity: 0.5 },
-    minute_boss_3: { color: '#ee5a6f', speed: 1.0, hp: 4200, radius: 40, damage: 50, exp: 800, isBoss: true, glowIntensity: 0.7 },
-    minute_boss_4: { color: '#c23616', speed: 1.2, hp: 6600, radius: 45, damage: 70, exp: 1200, isBoss: true, glowIntensity: 0.9 },
-    final_boss: { color: '#8B0000', speed: 1.3, hp: 15000, radius: 60, damage: 80, exp: 0, isBoss: true, isFinalBoss: true, glowIntensity: 1.5, pulseEffect: true }
+    minute_boss_1: { color: '#ff6b6b', speed: 0.8, hp: 400, radius: 32, damage: 25, exp: 400, isBoss: true, glowIntensity: 0.3 },
+    minute_boss_2: { color: '#ff4757', speed: 0.9, hp: 800, radius: 36, damage: 35, exp: 600, isBoss: true, glowIntensity: 0.5 },
+    minute_boss_3: { color: '#ee5a6f', speed: 1.0, hp: 1400, radius: 40, damage: 50, exp: 800, isBoss: true, glowIntensity: 0.7 },
+    minute_boss_4: { color: '#c23616', speed: 1.2, hp: 2200, radius: 45, damage: 70, exp: 1200, isBoss: true, glowIntensity: 0.9 },
+    final_boss: { color: '#8B0000', speed: 1.3, hp: 5000, radius: 60, damage: 80, exp: 0, isBoss: true, isFinalBoss: true, glowIntensity: 1.5, pulseEffect: true }
 };
 
 const STAGES = {
@@ -340,9 +340,9 @@ class ExpOrb {
 }
 
 class DamageNumber {
-    constructor(x, y, value) { this.x = x; this.y = y; this.value = Math.floor(value); this.life = 60; this.vy = -1; this.alpha = 1.0; const gb = Math.floor(Math.max(50, 255 - (this.value * 3))); this.colorStr = `${gb}, ${gb}`; }
+    constructor(x, y, value, isHeal = false) { this.x = x; this.y = y; this.value = Math.floor(value); this.life = 60; this.vy = -1; this.alpha = 1.0; this.isHeal = isHeal; if (isHeal) { this.colorStr = '46, 204, 113'; } else { const gb = Math.floor(Math.max(50, 255 - (this.value * 3))); this.colorStr = `255, ${gb}, ${gb}`; } }
     update() { this.y += this.vy; this.life--; this.alpha = Math.max(0, this.life / 30); }
-    draw(ctx) { ctx.fillStyle = `rgba(255, ${this.colorStr}, ${this.alpha})`; ctx.font = 'bold 20px sans-serif'; ctx.strokeStyle = `rgba(0, 0, 0, ${this.alpha})`; ctx.lineWidth = 3; ctx.textAlign = 'center'; ctx.strokeText(this.value, this.x, this.y); ctx.fillText(this.value, this.x, this.y); }
+    draw(ctx) { ctx.fillStyle = `rgba(${this.colorStr}, ${this.alpha})`; ctx.font = 'bold 20px sans-serif'; ctx.strokeStyle = `rgba(0, 0, 0, ${this.alpha})`; ctx.lineWidth = 3; ctx.textAlign = 'center'; const text = this.isHeal ? '+' + this.value : this.value; ctx.strokeText(text, this.x, this.y); ctx.fillText(text, this.x, this.y); }
 }
 
 class TreasureChest {
@@ -977,17 +977,17 @@ function createWeapon(type, owner) {
         case 'fire_wand': return new FireWandWeapon(owner); case 'mine': return new MineWeapon(owner); case 'spear': return new SpearWeapon(owner);
         // Evolved weapons
         case 'celestial_orbit': return new CelestialOrbitWeapon(owner);
-        case 'arcane_wand': return createEvolvedWeapon('wand', 'arcane_wand', owner, { damage: 2, projectileSpeed: 1.5 });
-        case 'divine_aura': return createEvolvedWeapon('aura', 'divine_aura', owner, { damage: 2, radius: 1.5 });
-        case 'deadly_blade': return createEvolvedWeapon('knife', 'deadly_blade', owner, { damage: 2, count: 1.5 });
-        case 'blessed_flood': return createEvolvedWeapon('holy_water', 'blessed_flood', owner, { damage: 2, radius: 1.5 });
-        case 'thunder_storm': return createEvolvedWeapon('lightning', 'thunder_storm', owner, { damage: 2.5, chainCount: 2 });
-        case 'holy_boomerang': return createEvolvedWeapon('cross', 'holy_boomerang', owner, { damage: 2, projectileSpeed: 1.5 });
-        case 'great_axe': return createEvolvedWeapon('axe', 'great_axe', owner, { damage: 2.5, radius: 1.3 });
-        case 'dragon_whip': return createEvolvedWeapon('whip', 'dragon_whip', owner, { damage: 2, radius: 1.5 });
-        case 'inferno': return createEvolvedWeapon('fire_wand', 'inferno', owner, { damage: 3, projectileSize: 1.5 });
-        case 'mine_field': return createEvolvedWeapon('mine', 'mine_field', owner, { damage: 2.5, count: 2 });
-        case 'javelin': return createEvolvedWeapon('spear', 'javelin', owner, { damage: 2, projectileSpeed: 1.5 });
+        case 'arcane_wand': return createEvolvedWeapon('wand', 'arcane_wand', owner, { damage: 2, projectileSpeed: 1.5, count: 3 });
+        case 'divine_aura': return createEvolvedWeapon('aura', 'divine_aura', owner, { damage: 2, radius: 1.5, lifesteal: 0.03 });
+        case 'deadly_blade': return createEvolvedWeapon('knife', 'deadly_blade', owner, { damage: 2, count: 3, cooldown: 0.5 });
+        case 'blessed_flood': return createEvolvedWeapon('holy_water', 'blessed_flood', owner, { damage: 2, radius: 1.5, duration: 2 });
+        case 'thunder_storm': return createEvolvedWeapon('lightning', 'thunder_storm', owner, { damage: 2.5, chainCount: 2, cooldown: 0.5 });
+        case 'holy_boomerang': return createEvolvedWeapon('cross', 'holy_boomerang', owner, { damage: 2, projectileSpeed: 1.5, projectileSize: 3, count: 2 });
+        case 'great_axe': return createEvolvedWeapon('axe', 'great_axe', owner, { damage: 2.5, radius: 1.3, count: 3, cooldown: 0.5 });
+        case 'dragon_whip': return createEvolvedWeapon('whip', 'dragon_whip', owner, { damage: 2, radius: 3, range: 3 });
+        case 'inferno': return createEvolvedWeapon('fire_wand', 'inferno', owner, { damage: 3, projectileSize: 2, count: 2, projectileSpeed: 3 });
+        case 'mine_field': return createEvolvedWeapon('mine', 'mine_field', owner, { damage: 2.5, count: 2, radius: 2 });
+        case 'javelin': return createEvolvedWeapon('spear', 'javelin', owner, { damage: 2, projectileSpeed: 1.5, projectileSize: 2, count: 2 });
         // TODO: Add other evolved weapons
     }
     return null;
@@ -1014,6 +1014,18 @@ function createEvolvedWeapon(baseType, evolvedType, owner, multipliers) {
     }
     if (multipliers.projectileSize && baseWeapon.projectileSize) {
         baseWeapon.projectileSize = Math.floor(baseWeapon.projectileSize * multipliers.projectileSize);
+    }
+    if (multipliers.cooldown && baseWeapon.cooldown) {
+        baseWeapon.cooldown = Math.floor(baseWeapon.cooldown * multipliers.cooldown);
+    }
+    if (multipliers.duration && baseWeapon.duration) {
+        baseWeapon.duration = Math.floor(baseWeapon.duration * multipliers.duration);
+    }
+    if (multipliers.range && baseWeapon.range) {
+        baseWeapon.range = Math.floor(baseWeapon.range * multipliers.range);
+    }
+    if (multipliers.lifesteal) {
+        baseWeapon.lifesteal = multipliers.lifesteal;
     }
     
     // Update type and make it max level (no upgrades)
@@ -1399,6 +1411,23 @@ function checkCollisions() {
         }));
         if (e.hp <= 0) {
             audioManager.playSFX('hit');
+            
+            // Check for lifesteal effect from divine_aura
+            p.weapons.forEach(w => {
+                if (w.type === 'divine_aura' && w.lifesteal) {
+                    const healAmount = Math.ceil(p.maxHp * w.lifesteal);
+                    p.hp = Math.min(p.hp + healAmount, p.maxHp);
+                    // Show heal number
+                    if (gameState.showDamageNumbers) {
+                        gameState.damageNumbers.push(new DamageNumber(p.x, p.y - 20, healAmount, true));
+                    }
+                    // Heal particles
+                    for (let j = 0; j < 5; j++) {
+                        gameState.particles.push(new Particle(p.x, p.y, '#2ecc71', Math.random() * 2 + 1, Math.random() * Math.PI * 2, 20));
+                    }
+                }
+            });
+            
             if (e.isFinalBoss) {
                 // Final boss defeated - clear game
                 endGame(true);
