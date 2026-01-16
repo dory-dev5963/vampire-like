@@ -226,6 +226,59 @@ class Enemy {
         this.radius = type.radius; this.speed = type.speed + Math.random() * 0.3; this.hp = type.hp * mult; this.damage = type.damage * mult; this.color = type.color; this.exp = type.exp || 5;
     }
     update(target) {
+        // Update status effect timers
+        if (this.slowTimer) {
+            this.slowTimer--;
+            if (this.slowTimer <= 0) {
+                this.speed = this.baseSpeed || this.speed;
+                this.slowed = false;
+            }
+        }
+        
+        if (this.defenseDownTimer) {
+            this.defenseDownTimer--;
+            if (this.defenseDownTimer <= 0) {
+                this.defenseDown = 0;
+            }
+        }
+        
+        if (this.stunnedTimer) {
+            this.stunnedTimer--;
+            if (this.stunnedTimer <= 0) {
+                this.stunned = false;
+            }
+        }
+        
+        if (this.knockbackTimer) {
+            this.knockbackTimer--;
+            this.x += this.knockbackX / 10;
+            this.y += this.knockbackY / 10;
+            if (this.knockbackTimer <= 0) {
+                this.knockbackX = 0;
+                this.knockbackY = 0;
+            }
+            return; // Don't move toward player during knockback
+        }
+        
+        if (this.burning) {
+            this.burnTickTimer = (this.burnTickTimer || 0) + 1;
+            if (this.burnTickTimer >= 60) {
+                this.hp -= this.burnDamage;
+                this.burnTickTimer = 0;
+                // Burn particles
+                for (let i = 0; i < 3; i++) {
+                    gameState.particles.push(new Particle(this.x, this.y, '#e67e22', Math.random() * 2, Math.random() * Math.PI * 2, 20));
+                }
+            }
+            this.burnTimer--;
+            if (this.burnTimer <= 0) {
+                this.burning = false;
+            }
+        }
+        
+        // Don't move if stunned
+        if (this.stunned) return;
+        
         const dx = target.x - this.x; const dy = target.y - this.y; const dist = Math.sqrt(dx * dx + dy * dy);
         if (dist > 0) { this.x += (dx / dist) * this.speed; this.y += (dy / dist) * this.speed; }
     }
@@ -234,6 +287,53 @@ class Enemy {
         const r = this.radius + bounce;
         ctx.save();
         ctx.translate(this.x, this.y);
+
+        // Status effect indicators
+        if (this.stunned) {
+            // Lightning effect around stunned enemy
+            ctx.strokeStyle = '#f1c40f';
+            ctx.lineWidth = 2;
+            for (let i = 0; i < 4; i++) {
+                const angle = (Math.PI * 2 * i) / 4 + gameTime * 5;
+                const x1 = Math.cos(angle) * (r + 5);
+                const y1 = Math.sin(angle) * (r + 5);
+                const x2 = Math.cos(angle) * (r + 10);
+                const y2 = Math.sin(angle) * (r + 10);
+                ctx.beginPath();
+                ctx.moveTo(x1, y1);
+                ctx.lineTo(x2, y2);
+                ctx.stroke();
+            }
+        }
+        
+        if (this.slowed) {
+            // Blue ice effect around slowed enemy
+            ctx.strokeStyle = 'rgba(52, 152, 219, 0.6)';
+            ctx.lineWidth = 3;
+            ctx.beginPath();
+            ctx.arc(0, 0, r + 5, 0, Math.PI * 2);
+            ctx.stroke();
+        }
+        
+        if (this.burning) {
+            // Fire particles around burning enemy
+            const fireAlpha = 0.4 + Math.sin(gameTime * 10) * 0.2;
+            ctx.fillStyle = `rgba(230, 126, 34, ${fireAlpha})`;
+            ctx.beginPath();
+            ctx.arc(0, 0, r + 3, 0, Math.PI * 2);
+            ctx.fill();
+        }
+        
+        if (this.defenseDown) {
+            // Purple defense down indicator
+            ctx.strokeStyle = 'rgba(155, 89, 182, 0.5)';
+            ctx.lineWidth = 2;
+            ctx.setLineDash([5, 5]);
+            ctx.beginPath();
+            ctx.arc(0, 0, r + 2, 0, Math.PI * 2);
+            ctx.stroke();
+            ctx.setLineDash([]);
+        }
 
         // Boss glow effect
         if (this.isBoss && this.glowIntensity) {
@@ -340,9 +440,37 @@ class ExpOrb {
 }
 
 class DamageNumber {
-    constructor(x, y, value, isHeal = false) { this.x = x; this.y = y; this.value = Math.floor(value); this.life = 60; this.vy = -1; this.alpha = 1.0; this.isHeal = isHeal; if (isHeal) { this.colorStr = '46, 204, 113'; } else { const gb = Math.floor(Math.max(50, 255 - (this.value * 3))); this.colorStr = `255, ${gb}, ${gb}`; } }
+    constructor(x, y, value, isHeal = false, isCrit = false) { 
+        this.x = x; this.y = y; this.value = Math.floor(value); this.life = 60; this.vy = -1; this.alpha = 1.0; this.isHeal = isHeal; this.isCrit = isCrit;
+        if (isHeal) { 
+            this.colorStr = '46, 204, 113'; 
+        } else if (isCrit) {
+            this.colorStr = '241, 196, 15'; // Gold for crit
+        } else { 
+            const gb = Math.floor(Math.max(50, 255 - (this.value * 3))); 
+            this.colorStr = `255, ${gb}, ${gb}`; 
+        } 
+    }
     update() { this.y += this.vy; this.life--; this.alpha = Math.max(0, this.life / 30); }
-    draw(ctx) { ctx.fillStyle = `rgba(${this.colorStr}, ${this.alpha})`; ctx.font = 'bold 20px sans-serif'; ctx.strokeStyle = `rgba(0, 0, 0, ${this.alpha})`; ctx.lineWidth = 3; ctx.textAlign = 'center'; const text = this.isHeal ? '+' + this.value : this.value; ctx.strokeText(text, this.x, this.y); ctx.fillText(text, this.x, this.y); }
+    draw(ctx) { 
+        ctx.fillStyle = `rgba(${this.colorStr}, ${this.alpha})`; 
+        const fontSize = this.isCrit ? 28 : 20;
+        ctx.font = `bold ${fontSize}px sans-serif`; 
+        ctx.strokeStyle = `rgba(0, 0, 0, ${this.alpha})`; 
+        ctx.lineWidth = 3; 
+        ctx.textAlign = 'center'; 
+        const text = this.isHeal ? '+' + this.value : (this.isCrit ? this.value + '!' : this.value); 
+        if (this.isCrit) {
+            ctx.save();
+            ctx.shadowBlur = 10;
+            ctx.shadowColor = '#f1c40f';
+        }
+        ctx.strokeText(text, this.x, this.y); 
+        ctx.fillText(text, this.x, this.y); 
+        if (this.isCrit) {
+            ctx.restore();
+        }
+    }
 }
 
 class TreasureChest {
@@ -572,6 +700,7 @@ class CelestialOrbitWeapon {
         this.level = 1;
         this.maxLevel = 1; // No level ups
         this.particleTimer = 0;
+        this.slow = 0.3; // 30% slow effect
     }
     update() {
         this.angle += this.rotationSpeed * this.owner.attackFrequency * this.owner.attackSpeed;
@@ -977,17 +1106,17 @@ function createWeapon(type, owner) {
         case 'fire_wand': return new FireWandWeapon(owner); case 'mine': return new MineWeapon(owner); case 'spear': return new SpearWeapon(owner);
         // Evolved weapons
         case 'celestial_orbit': return new CelestialOrbitWeapon(owner);
-        case 'arcane_wand': return createEvolvedWeapon('wand', 'arcane_wand', owner, { damage: 2, projectileSpeed: 1.5, count: 3 });
+        case 'arcane_wand': return createEvolvedWeapon('wand', 'arcane_wand', owner, { damage: 2, projectileSpeed: 1.5, count: 3, expBoost: 0.15 });
         case 'divine_aura': return createEvolvedWeapon('aura', 'divine_aura', owner, { damage: 2, radius: 1.5, lifesteal: 0.03 });
-        case 'deadly_blade': return createEvolvedWeapon('knife', 'deadly_blade', owner, { damage: 2, count: 3, cooldown: 0.5 });
-        case 'blessed_flood': return createEvolvedWeapon('holy_water', 'blessed_flood', owner, { damage: 2, radius: 1.5, duration: 2 });
-        case 'thunder_storm': return createEvolvedWeapon('lightning', 'thunder_storm', owner, { damage: 2.5, chainCount: 2, cooldown: 0.5 });
-        case 'holy_boomerang': return createEvolvedWeapon('cross', 'holy_boomerang', owner, { damage: 2, projectileSpeed: 1.5, projectileSize: 3, count: 2 });
-        case 'great_axe': return createEvolvedWeapon('axe', 'great_axe', owner, { damage: 2.5, radius: 1.3, count: 3, cooldown: 0.5 });
-        case 'dragon_whip': return createEvolvedWeapon('whip', 'dragon_whip', owner, { damage: 2, radius: 3, range: 3 });
-        case 'inferno': return createEvolvedWeapon('fire_wand', 'inferno', owner, { damage: 3, projectileSize: 2, count: 2, projectileSpeed: 3 });
-        case 'mine_field': return createEvolvedWeapon('mine', 'mine_field', owner, { damage: 2.5, count: 2, radius: 2 });
-        case 'javelin': return createEvolvedWeapon('spear', 'javelin', owner, { damage: 2, projectileSpeed: 1.5, projectileSize: 2, count: 2 });
+        case 'deadly_blade': return createEvolvedWeapon('knife', 'deadly_blade', owner, { damage: 2, count: 3, cooldown: 0.5, critChance: 0.25, critDamage: 2.5 });
+        case 'blessed_flood': return createEvolvedWeapon('holy_water', 'blessed_flood', owner, { damage: 2, radius: 1.5, duration: 2, defenseDown: 0.3 });
+        case 'thunder_storm': return createEvolvedWeapon('lightning', 'thunder_storm', owner, { damage: 2.5, chainCount: 2, cooldown: 0.5, stunChance: 0.4, stunDuration: 90 });
+        case 'holy_boomerang': return createEvolvedWeapon('cross', 'holy_boomerang', owner, { damage: 2, projectileSpeed: 1.5, projectileSize: 3, count: 2, knockback: 150 });
+        case 'great_axe': return createEvolvedWeapon('axe', 'great_axe', owner, { damage: 2.5, radius: 1.3, count: 3, cooldown: 0.5, stunChance: 0.5, stunDuration: 60 });
+        case 'dragon_whip': return createEvolvedWeapon('whip', 'dragon_whip', owner, { damage: 2, radius: 3, range: 3, lifesteal: 0.05 });
+        case 'inferno': return createEvolvedWeapon('fire_wand', 'inferno', owner, { damage: 3, projectileSize: 2, count: 2, projectileSpeed: 3, burn: 10, burnDuration: 180 });
+        case 'mine_field': return createEvolvedWeapon('mine', 'mine_field', owner, { damage: 2.5, count: 2, radius: 2, slow: 0.4 });
+        case 'javelin': return createEvolvedWeapon('spear', 'javelin', owner, { damage: 2, projectileSpeed: 1.5, projectileSize: 2, count: 2, healOnHit: 2 });
         // TODO: Add other evolved weapons
     }
     return null;
@@ -1024,8 +1153,37 @@ function createEvolvedWeapon(baseType, evolvedType, owner, multipliers) {
     if (multipliers.range && baseWeapon.range) {
         baseWeapon.range = Math.floor(baseWeapon.range * multipliers.range);
     }
+    
+    // Apply special effects based on weapon type
     if (multipliers.lifesteal) {
         baseWeapon.lifesteal = multipliers.lifesteal;
+    }
+    if (multipliers.slow) {
+        baseWeapon.slow = multipliers.slow;
+    }
+    if (multipliers.expBoost) {
+        baseWeapon.expBoost = multipliers.expBoost;
+    }
+    if (multipliers.critChance) {
+        baseWeapon.critChance = multipliers.critChance;
+        baseWeapon.critDamage = multipliers.critDamage || 2.0;
+    }
+    if (multipliers.defenseDown) {
+        baseWeapon.defenseDown = multipliers.defenseDown;
+    }
+    if (multipliers.stunChance) {
+        baseWeapon.stunChance = multipliers.stunChance;
+        baseWeapon.stunDuration = multipliers.stunDuration || 60;
+    }
+    if (multipliers.knockback) {
+        baseWeapon.knockback = multipliers.knockback;
+    }
+    if (multipliers.burn) {
+        baseWeapon.burn = multipliers.burn;
+        baseWeapon.burnDuration = multipliers.burnDuration || 180;
+    }
+    if (multipliers.healOnHit) {
+        baseWeapon.healOnHit = multipliers.healOnHit;
     }
     
     // Update type and make it max level (no upgrades)
@@ -1403,8 +1561,64 @@ function checkCollisions() {
                 if (Math.hypot(h.x - e.x, h.y - e.y) < h.radius + e.radius) hit = true;
             }
             if (hit) {
-                const d = h.damage || w.damage * p.damageMult; e.hp -= d;
-                if (gameState.showDamageNumbers) gameState.damageNumbers.push(new DamageNumber(e.x, e.y, d));
+                let d = h.damage || w.damage * p.damageMult;
+                
+                // Apply defense down multiplier if enemy has defense down debuff
+                if (e.defenseDown) {
+                    d *= (1 + e.defenseDown);
+                }
+                
+                // Apply critical hit if weapon has crit chance
+                if (w.critChance && Math.random() < w.critChance) {
+                    d *= w.critDamage;
+                    if (gameState.showDamageNumbers) {
+                        gameState.damageNumbers.push(new DamageNumber(e.x, e.y, d, false, true));
+                    }
+                } else {
+                    if (gameState.showDamageNumbers) gameState.damageNumbers.push(new DamageNumber(e.x, e.y, d));
+                }
+                
+                e.hp -= d;
+                
+                // Apply special effects
+                if (w.slow && !e.slowed) {
+                    e.baseSpeed = e.baseSpeed || e.speed;
+                    e.speed = e.baseSpeed * (1 - w.slow);
+                    e.slowed = true;
+                    e.slowTimer = 180;
+                }
+                
+                if (w.defenseDown && !e.defenseDown) {
+                    e.defenseDown = w.defenseDown;
+                    e.defenseDownTimer = 300;
+                }
+                
+                if (w.stunChance && Math.random() < w.stunChance) {
+                    e.stunned = true;
+                    e.stunnedTimer = w.stunDuration;
+                }
+                
+                if (w.knockback) {
+                    const angle = Math.atan2(e.y - h.y, e.x - h.x);
+                    e.knockbackX = Math.cos(angle) * w.knockback;
+                    e.knockbackY = Math.sin(angle) * w.knockback;
+                    e.knockbackTimer = 10;
+                }
+                
+                if (w.burn && !e.burning) {
+                    e.burning = true;
+                    e.burnDamage = w.burn;
+                    e.burnTimer = w.burnDuration;
+                    e.burnTickTimer = 0;
+                }
+                
+                if (w.healOnHit) {
+                    p.hp = Math.min(p.hp + w.healOnHit, p.maxHp);
+                    if (gameState.showDamageNumbers) {
+                        gameState.damageNumbers.push(new DamageNumber(p.x, p.y - 20, w.healOnHit, true));
+                    }
+                }
+                
                 // Hit particles
                 for (let j = 0; j < 5; j++) gameState.particles.push(new Particle(e.x, e.y, e.color, Math.random() * 2 + 1, Math.random() * Math.PI * 2, 20));
             }
@@ -1412,9 +1626,9 @@ function checkCollisions() {
         if (e.hp <= 0) {
             audioManager.playSFX('hit');
             
-            // Check for lifesteal effect from divine_aura
+            // Check for lifesteal effect
             p.weapons.forEach(w => {
-                if (w.type === 'divine_aura' && w.lifesteal) {
+                if (w.lifesteal) {
                     const healAmount = Math.ceil(p.maxHp * w.lifesteal);
                     p.hp = Math.min(p.hp + healAmount, p.maxHp);
                     // Show heal number
@@ -1425,6 +1639,13 @@ function checkCollisions() {
                     for (let j = 0; j < 5; j++) {
                         gameState.particles.push(new Particle(p.x, p.y, '#2ecc71', Math.random() * 2 + 1, Math.random() * Math.PI * 2, 20));
                     }
+                }
+            });
+            
+            // Check for exp boost effect
+            p.weapons.forEach(w => {
+                if (w.expBoost) {
+                    e.exp = Math.ceil(e.exp * (1 + w.expBoost));
                 }
             });
             
