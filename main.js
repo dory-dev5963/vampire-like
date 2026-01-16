@@ -44,7 +44,7 @@ const BOSS_TYPES = {
     minute_boss_2: { color: '#ff4757', speed: 0.9, hp: 800, radius: 36, damage: 35, exp: 600, isBoss: true, glowIntensity: 0.5 },
     minute_boss_3: { color: '#ee5a6f', speed: 1.0, hp: 1400, radius: 40, damage: 50, exp: 800, isBoss: true, glowIntensity: 0.7 },
     minute_boss_4: { color: '#c23616', speed: 1.2, hp: 2200, radius: 45, damage: 70, exp: 1200, isBoss: true, glowIntensity: 0.9 },
-    final_boss: { color: '#8B0000', speed: 1.3, hp: 5000, radius: 60, damage: 80, exp: 0, isBoss: true, isFinalBoss: true, glowIntensity: 1.5, pulseEffect: true }
+    final_boss: { color: '#8B0000', speed: 1.3, hp: 50000, radius: 60, damage: 80, exp: 0, isBoss: true, isFinalBoss: true, glowIntensity: 1.5, pulseEffect: true }
 };
 
 const STAGES = {
