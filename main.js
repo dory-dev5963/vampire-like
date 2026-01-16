@@ -40,8 +40,11 @@ const ENEMY_TYPES = [
 ];
 
 const BOSS_TYPES = {
-    minute_boss: { color: '#ff6b6b', speed: 0.8, hp: 500, radius: 35, damage: 30, exp: 500, isBoss: true },
-    final_boss: { color: '#ff0000', speed: 1.0, hp: 3000, radius: 50, damage: 50, exp: 0, isBoss: true, isFinalBoss: true }
+    minute_boss_1: { color: '#ff6b6b', speed: 0.8, hp: 1200, radius: 32, damage: 25, exp: 400, isBoss: true, glowIntensity: 0.3 },
+    minute_boss_2: { color: '#ff4757', speed: 0.9, hp: 2400, radius: 36, damage: 35, exp: 600, isBoss: true, glowIntensity: 0.5 },
+    minute_boss_3: { color: '#ee5a6f', speed: 1.0, hp: 4200, radius: 40, damage: 50, exp: 800, isBoss: true, glowIntensity: 0.7 },
+    minute_boss_4: { color: '#c23616', speed: 1.2, hp: 6600, radius: 45, damage: 70, exp: 1200, isBoss: true, glowIntensity: 0.9 },
+    final_boss: { color: '#8B0000', speed: 1.3, hp: 15000, radius: 60, damage: 80, exp: 0, isBoss: true, isFinalBoss: true, glowIntensity: 1.5, pulseEffect: true }
 };
 
 const STAGES = {
@@ -232,38 +235,94 @@ class Enemy {
         ctx.save();
         ctx.translate(this.x, this.y);
 
+        // Boss glow effect
+        if (this.isBoss && this.glowIntensity) {
+            const glowRadius = r + 10 * this.glowIntensity;
+            const gradient = ctx.createRadialGradient(0, 0, r, 0, 0, glowRadius);
+            const alpha = this.pulseEffect ? (0.3 + Math.sin(gameTime * 3) * 0.2) : 0.3;
+            gradient.addColorStop(0, this.color);
+            gradient.addColorStop(1, 'rgba(0, 0, 0, 0)');
+            ctx.fillStyle = gradient;
+            ctx.beginPath();
+            ctx.arc(0, 0, glowRadius, 0, Math.PI * 2);
+            ctx.fill();
+        }
+
+        // Final boss pulse effect
+        if (this.isFinalBoss && this.pulseEffect) {
+            const pulseSize = r * (1 + Math.sin(gameTime * 4) * 0.1);
+            ctx.strokeStyle = '#ff0000';
+            ctx.lineWidth = 3;
+            ctx.beginPath();
+            ctx.arc(0, 0, pulseSize + 5, 0, Math.PI * 2);
+            ctx.stroke();
+        }
+
         // Body
         ctx.fillStyle = this.color;
         ctx.beginPath();
         ctx.arc(0, 0, r, 0, Math.PI * 2);
         ctx.fill();
 
-        // Horns/Spikes for stronger enemies
-        if (this.radius > 15) {
-            ctx.fillStyle = '#2c3e50';
-            for (let i = 0; i < 3; i++) {
+        // Boss outer ring
+        if (this.isBoss) {
+            ctx.strokeStyle = 'rgba(255, 255, 255, 0.5)';
+            ctx.lineWidth = this.isFinalBoss ? 4 : 2;
+            ctx.beginPath();
+            ctx.arc(0, 0, r, 0, Math.PI * 2);
+            ctx.stroke();
+        }
+
+        // Horns/Spikes for stronger enemies and bosses
+        if (this.radius > 15 || this.isBoss) {
+            const spikeCount = this.isFinalBoss ? 8 : this.isBoss ? 6 : 3;
+            const spikeLength = this.isFinalBoss ? 20 : this.isBoss ? 15 : 10;
+            ctx.fillStyle = this.isFinalBoss ? '#000000' : '#2c3e50';
+            for (let i = 0; i < spikeCount; i++) {
+                const angle = (Math.PI * 2 * i) / spikeCount + gameTime * (this.isFinalBoss ? 2 : 1);
+                const x1 = Math.cos(angle) * r;
+                const y1 = Math.sin(angle) * r;
+                const x2 = Math.cos(angle) * (r + spikeLength);
+                const y2 = Math.sin(angle) * (r + spikeLength);
                 ctx.beginPath();
-                ctx.moveTo(-10 + i * 10, -r);
-                ctx.lineTo(-5 + i * 10, -r - 10);
-                ctx.lineTo(i * 10, -r);
+                ctx.moveTo(x1, y1);
+                ctx.lineTo(x2, y2);
+                ctx.lineTo(Math.cos(angle + 0.2) * r, Math.sin(angle + 0.2) * r);
                 ctx.fill();
             }
         }
 
         // Eyes
-        ctx.fillStyle = 'white';
-        ctx.beginPath(); ctx.arc(-r * 0.4, -r * 0.2, r * 0.25, 0, Math.PI * 2); ctx.fill();
-        ctx.beginPath(); ctx.arc(r * 0.4, -r * 0.2, r * 0.25, 0, Math.PI * 2); ctx.fill();
+        const eyeSize = this.isFinalBoss ? r * 0.3 : r * 0.25;
+        ctx.fillStyle = this.isFinalBoss ? '#ff0000' : 'white';
+        ctx.beginPath(); ctx.arc(-r * 0.4, -r * 0.2, eyeSize, 0, Math.PI * 2); ctx.fill();
+        ctx.beginPath(); ctx.arc(r * 0.4, -r * 0.2, eyeSize, 0, Math.PI * 2); ctx.fill();
 
-        ctx.fillStyle = 'black';
-        ctx.beginPath(); ctx.arc(-r * 0.4, -r * 0.2, r * 0.1, 0, Math.PI * 2); ctx.fill();
-        ctx.beginPath(); ctx.arc(r * 0.4, -r * 0.2, r * 0.1, 0, Math.PI * 2); ctx.fill();
+        ctx.fillStyle = this.isFinalBoss ? '#000000' : 'black';
+        const pupilSize = this.isFinalBoss ? r * 0.15 : r * 0.1;
+        ctx.beginPath(); ctx.arc(-r * 0.4, -r * 0.2, pupilSize, 0, Math.PI * 2); ctx.fill();
+        ctx.beginPath(); ctx.arc(r * 0.4, -r * 0.2, pupilSize, 0, Math.PI * 2); ctx.fill();
 
-        // Angry brows
-        ctx.strokeStyle = 'black';
-        ctx.lineWidth = 2;
+        // Angry brows - more intense for bosses
+        ctx.strokeStyle = this.isFinalBoss ? '#ffffff' : 'black';
+        ctx.lineWidth = this.isBoss ? 3 : 2;
         ctx.beginPath(); ctx.moveTo(-r * 0.7, -r * 0.5); ctx.lineTo(-r * 0.1, -r * 0.2); ctx.stroke();
         ctx.beginPath(); ctx.moveTo(r * 0.7, -r * 0.5); ctx.lineTo(r * 0.1, -r * 0.2); ctx.stroke();
+
+        // Final boss additional features
+        if (this.isFinalBoss) {
+            // Crown/horns
+            ctx.fillStyle = '#FFD700';
+            ctx.beginPath();
+            ctx.moveTo(-r * 0.6, -r * 0.8);
+            ctx.lineTo(-r * 0.5, -r * 1.2);
+            ctx.lineTo(-r * 0.3, -r * 0.9);
+            ctx.lineTo(0, -r * 1.3);
+            ctx.lineTo(r * 0.3, -r * 0.9);
+            ctx.lineTo(r * 0.5, -r * 1.2);
+            ctx.lineTo(r * 0.6, -r * 0.8);
+            ctx.fill();
+        }
 
         ctx.restore();
     }
@@ -1141,7 +1200,7 @@ class Player {
 }
 
 // --- GAME STATE & ENGINE ---
-const gameState = { player: null, enemies: [], expOrbs: [], projectiles: [], damageNumbers: [], particles: [], treasureChests: [], showDamageNumbers: true, isPaused: false, selectedCharacter: 'knight', selectedStage: 'forest', lastBossSpawnTime: 0, finalBossSpawned: false };
+const gameState = { player: null, enemies: [], expOrbs: [], projectiles: [], damageNumbers: [], particles: [], treasureChests: [], showDamageNumbers: true, isPaused: false, selectedCharacter: 'knight', selectedStage: 'forest', lastBossSpawnTime: 0, finalBossSpawned: false, bossCount: 0 };
 const canvas = document.getElementById('gameCanvas'); const ctx = canvas.getContext('2d');
 let gameTime = 0, lastTime = 0, nextSpawnTime = 0, loopRunning = false;
 const keys = { w: false, s: false, a: false, d: false, ArrowUp: false, ArrowDown: false, ArrowLeft: false, ArrowRight: false };
@@ -1298,13 +1357,22 @@ function onChoiceMade() { document.getElementById('level-up-modal').classList.ad
 function spawnEnemy() { const min = Math.min(9, Math.floor(gameTime / 30)); gameState.enemies.push(new Enemy(ENEMY_TYPES[min])); }
 
 function spawnBoss(isFinal = false) {
-    const bossType = isFinal ? BOSS_TYPES.final_boss : BOSS_TYPES.minute_boss;
+    let bossType;
+    if (isFinal) {
+        bossType = BOSS_TYPES.final_boss;
+    } else {
+        gameState.bossCount++;
+        const bossKey = 'minute_boss_' + Math.min(gameState.bossCount, 4);
+        bossType = BOSS_TYPES[bossKey];
+    }
     const mult = (gameState.selectedStage ? STAGES[gameState.selectedStage].mult : 1.0);
     const boss = new Enemy(bossType);
     boss.hp = bossType.hp * mult;
     boss.damage = bossType.damage * mult;
     boss.isBoss = true;
     boss.isFinalBoss = isFinal;
+    boss.glowIntensity = bossType.glowIntensity || 0.5;
+    boss.pulseEffect = bossType.pulseEffect || false;
     gameState.enemies.push(boss);
     if (!isFinal) {
         gameState.lastBossSpawnTime = Math.floor(gameTime / 60) * 60;
@@ -1842,7 +1910,7 @@ window.selectStage = (stage) => {
 };
 window.goToCharacterSelect = () => { document.getElementById('title-screen').classList.add('hidden'); document.getElementById('character-select-screen').classList.remove('hidden'); audioManager.init(); };
 window.selectCharacter = (char) => { gameState.selectedCharacter = char; document.getElementById('character-select-screen').classList.add('hidden'); document.getElementById('start-screen').classList.remove('hidden'); audioManager.startBGM(); };
-window.startGame = (type) => { document.getElementById('start-screen').classList.add('hidden'); gameState.player = new Player(type, gameState.selectedCharacter); gameState.enemies = []; gameState.expOrbs = []; gameState.treasureChests = []; gameState.damageNumbers = []; gameState.particles = []; gameState.lastBossSpawnTime = 0; gameState.finalBossSpawned = false; gameTime = 0; nextSpawnTime = 1; lastTime = performance.now(); loopRunning = true; updateInventory(); requestAnimationFrame(loop); };
+window.startGame = (type) => { document.getElementById('start-screen').classList.add('hidden'); gameState.player = new Player(type, gameState.selectedCharacter); gameState.enemies = []; gameState.expOrbs = []; gameState.treasureChests = []; gameState.damageNumbers = []; gameState.particles = []; gameState.lastBossSpawnTime = 0; gameState.finalBossSpawned = false; gameState.bossCount = 0; gameTime = 0; nextSpawnTime = 1; lastTime = performance.now(); loopRunning = true; updateInventory(); requestAnimationFrame(loop); };
 window.toggleSettings = () => { document.getElementById('settings-modal').classList.toggle('hidden'); document.body.classList.toggle('settings-active'); const btn = document.getElementById('btn-toggle-dmg'); if (btn) btn.innerText = gameState.showDamageNumbers ? t('settings_hide_dmg') : t('settings_show_dmg'); };
 window.toggleDamageNumbers = () => { gameState.showDamageNumbers = !gameState.showDamageNumbers; const btn = document.getElementById('btn-toggle-dmg'); if (btn) btn.innerText = gameState.showDamageNumbers ? t('settings_hide_dmg') : t('settings_show_dmg'); };
 window.changeLang = (lang) => { currentLang = lang; updateTexts(); };
