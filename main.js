@@ -40,11 +40,11 @@ const ENEMY_TYPES = [
 ];
 
 const BOSS_TYPES = {
-    minute_boss_1: { color: '#ff6b6b', speed: 1.6, hp: 18000, radius: 32, damage: 25, exp: 400, isBoss: true, glowIntensity: 0.3 },
-    minute_boss_2: { color: '#ff4757', speed: 1.8, hp: 36000, radius: 36, damage: 35, exp: 600, isBoss: true, glowIntensity: 0.5 },
-    minute_boss_3: { color: '#ee5a6f', speed: 2.0, hp: 63000, radius: 40, damage: 50, exp: 800, isBoss: true, glowIntensity: 0.7 },
-    minute_boss_4: { color: '#c23616', speed: 2.4, hp: 99000, radius: 45, damage: 70, exp: 1200, isBoss: true, glowIntensity: 0.9 },
-    final_boss: { color: '#8B0000', speed: 1.95, hp: 750000, radius: 60, damage: 80, exp: 0, isBoss: true, isFinalBoss: true, glowIntensity: 1.5, pulseEffect: true }
+    minute_boss_1: { color: '#ff6b6b', speed: 1.6, hp: 54000, radius: 32, damage: 25, exp: 400, isBoss: true, glowIntensity: 0.3 },
+    minute_boss_2: { color: '#ff4757', speed: 1.8, hp: 108000, radius: 36, damage: 35, exp: 600, isBoss: true, glowIntensity: 0.5 },
+    minute_boss_3: { color: '#ee5a6f', speed: 2.0, hp: 189000, radius: 40, damage: 50, exp: 800, isBoss: true, glowIntensity: 0.7 },
+    minute_boss_4: { color: '#c23616', speed: 2.4, hp: 297000, radius: 45, damage: 70, exp: 1200, isBoss: true, glowIntensity: 0.9 },
+    final_boss: { color: '#8B0000', speed: 1.95, hp: 2250000, radius: 60, damage: 80, exp: 0, isBoss: true, isFinalBoss: true, glowIntensity: 1.5, pulseEffect: true }
 };
 
 const STAGES = {
@@ -399,7 +399,7 @@ class Enemy {
                 }
             } else {
                 // Regular bosses - simpler attacks
-                if (this.attackTimer >= 75) { // Fire every 1.25 seconds (2x faster)
+                if (this.attackTimer >= 37) { // Fire every 0.62 seconds (4x faster)
                     this.attackTimer = 0;
                     // Fire 4-5 projectiles toward player
                     const baseAngle = Math.atan2(target.y - this.y, target.x - this.x);
