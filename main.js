@@ -34,7 +34,7 @@ const ENEMY_TYPES = [
     { color: '#e67e22', speed: 1.5, hp: 2000, radius: 12, damage: 3, exp: 80 },  // 120-150s
     { color: '#2980b9', speed: 1.8, hp: 4500, radius: 18, damage: 4, exp: 200 },// 150-180s
     { color: '#2c3e50', speed: 0.8, hp: 10000, radius: 25, damage: 5, exp: 500 },// 180-210s
-    { color: '#ecf0f1', speed: 2.5, hp: 5000, radius: 15, damage: 5, exp: 300 },// 210-240s
+    { color: '#ecf0f1', speed: 2.0, hp: 5000, radius: 15, damage: 5, exp: 300 },// 210-240s
     { color: '#8e44ad', speed: 1.0, hp: 20000, radius: 40, damage: 6, exp: 1000 },// 240-270s
     { color: '#c0392b', speed: 1.5, hp: 35000, radius: 20, damage: 7, exp: 2000 } // 270-300s
 ];
@@ -1736,7 +1736,7 @@ function showLevelUpMenu() {
             });
         });
     }
-    if (options.length === 0) options.push({ cat: 'label_skill', r: RARITIES.common, isNew: false, name: t("heal"), icon: "assets/heart.svg", action: () => { p.hp = Math.min(p.maxHp, p.hp + 50); onChoiceMade(); } });
+    if (options.length === 0) options.push({ cat: 'label_skill', r: RARITIES.common, isNew: false, name: t("heal"), icon: "assets/heart.svg", action: () => { p.hp = Math.min(p.maxHp, p.hp + p.maxHp * 0.2); onChoiceMade(); } });
 
     options.sort(() => 0.5 - Math.random()).slice(0, 3).forEach(opt => {
         const btn = document.createElement('div'); btn.className = 'level-up-option'; btn.style.borderColor = opt.isNew ? '#ffffff' : opt.r.color;
@@ -1775,8 +1775,13 @@ function spawnEnemy() {
         const randomIndex = Math.floor(Math.random() * ENEMY_TYPES.length);
         enemyType = ENEMY_TYPES[randomIndex];
     } else {
-        const min = Math.min(9, Math.floor(gameTime / 30)); 
-        enemyType = ENEMY_TYPES[min];
+        const currentWave = Math.min(9, Math.floor(gameTime / 30));
+        // After 30 seconds, 50% chance to spawn enemy from previous wave
+        if (currentWave > 0 && Math.random() < 0.5) {
+            enemyType = ENEMY_TYPES[currentWave - 1];
+        } else {
+            enemyType = ENEMY_TYPES[currentWave];
+        }
     }
     
     // Base spawn
@@ -1786,9 +1791,9 @@ function spawnEnemy() {
     let spawnMultiplier = 1;
     if (gameTime >= 240) spawnMultiplier = 3; // 4-5 min: 4x total
     else if (gameTime >= 180) spawnMultiplier = 2; // 3-4 min: 3x total
-    else if (gameTime >= 120) spawnMultiplier = 1.5; // 2-3 min: 2.5x total
-    else if (gameTime >= 60) spawnMultiplier = 1; // 1-2 min: 2x total
-    else spawnMultiplier = 0.2; // 0-1 min: 1.2x total
+    else if (gameTime >= 120) spawnMultiplier = 1.8; // 2-3 min: 2.8x total
+    else if (gameTime >= 60) spawnMultiplier = 1.4; // 1-2 min: 2.4x total
+    else spawnMultiplier = 1; // 0-1 min: 2x total
     
     // Spawn additional enemies based on multiplier
     const additionalSpawns = Math.floor(spawnMultiplier);
@@ -1798,7 +1803,15 @@ function spawnEnemy() {
             const randomIndex = Math.floor(Math.random() * ENEMY_TYPES.length);
             gameState.enemies.push(new Enemy(ENEMY_TYPES[randomIndex]));
         } else {
-            gameState.enemies.push(new Enemy(enemyType));
+            // Same logic: 50% chance for previous wave enemy after 30s
+            const currentWave = Math.min(9, Math.floor(gameTime / 30));
+            let additionalEnemyType;
+            if (currentWave > 0 && Math.random() < 0.5) {
+                additionalEnemyType = ENEMY_TYPES[currentWave - 1];
+            } else {
+                additionalEnemyType = ENEMY_TYPES[currentWave];
+            }
+            gameState.enemies.push(new Enemy(additionalEnemyType));
         }
     }
     
@@ -1808,7 +1821,15 @@ function spawnEnemy() {
             const randomIndex = Math.floor(Math.random() * ENEMY_TYPES.length);
             gameState.enemies.push(new Enemy(ENEMY_TYPES[randomIndex]));
         } else {
-            gameState.enemies.push(new Enemy(enemyType));
+            // Same logic: 50% chance for previous wave enemy after 30s
+            const currentWave = Math.min(9, Math.floor(gameTime / 30));
+            let fractionalEnemyType;
+            if (currentWave > 0 && Math.random() < 0.5) {
+                fractionalEnemyType = ENEMY_TYPES[currentWave - 1];
+            } else {
+                fractionalEnemyType = ENEMY_TYPES[currentWave];
+            }
+            gameState.enemies.push(new Enemy(fractionalEnemyType));
         }
     }
 }
@@ -2442,6 +2463,30 @@ function loop(timestamp) {
     gameState.enemies = gameState.enemies.filter(e => {
         e.update(p);
         e.draw(ctx);
+        
+        // Check if enemy is dead and drop exp orb + coins
+        if (e.hp <= 0) {
+            // Drop exp orb
+            gameState.expOrbs.push(new ExpOrb(e.x, e.y, e.exp));
+            
+            // Drop coins with probability
+            const permanentUpgrades = JSON.parse(localStorage.getItem('permanent_upgrades') || '{}');
+            const coinDropRateBonus = PERMANENT_UPGRADES.coinDropRate.effect * (permanentUpgrades.coinDropRate || 0);
+            const totalDropRate = 0.05 + coinDropRateBonus;
+            if (Math.random() < totalDropRate) {
+                const coinBonus = PERMANENT_UPGRADES.coinBonus.effect * (permanentUpgrades.coinBonus || 0);
+                const baseCoinValue = Math.max(1, Math.floor(e.exp / 5));
+                const coinValue = Math.floor(baseCoinValue * (1 + coinBonus));
+                gameState.totalCoins += coinValue;
+                const savedCoins = parseInt(localStorage.getItem('total_coins') || '0');
+                localStorage.setItem('total_coins', (savedCoins + coinValue).toString());
+                // Visual feedback for coin gain
+                gameState.damageNumbers.push(new DamageNumber(e.x, e.y - 20, '+' + coinValue + '💰', true));
+            }
+            
+            return false; // Remove enemy
+        }
+        
         // Remove enemies that are too far off screen (beyond 2000px)
         const distFromCenter = Math.hypot(e.x - GAME_WIDTH/2, e.y - GAME_HEIGHT/2);
         return e.hp > 0 && distFromCenter < 3000;
