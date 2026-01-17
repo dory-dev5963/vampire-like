@@ -215,6 +215,49 @@ class Particle {
         ctx.globalAlpha = 1.0;
     }
 }
+
+class BossProjectile {
+    constructor(x, y, targetX, targetY, damage) {
+        this.x = x;
+        this.y = y;
+        this.damage = damage;
+        this.radius = 8;
+        const angle = Math.atan2(targetY - y, targetX - x);
+        const speed = 4;
+        this.vx = Math.cos(angle) * speed;
+        this.vy = Math.sin(angle) * speed;
+    }
+    update() {
+        this.x += this.vx;
+        this.y += this.vy;
+    }
+    draw(ctx) {
+        // Dark energy ball with red glow
+        const gradient = ctx.createRadialGradient(this.x, this.y, 0, this.x, this.y, this.radius * 2);
+        gradient.addColorStop(0, '#8B0000');
+        gradient.addColorStop(0.5, '#ff0000');
+        gradient.addColorStop(1, 'rgba(0, 0, 0, 0)');
+        ctx.fillStyle = gradient;
+        ctx.beginPath();
+        ctx.arc(this.x, this.y, this.radius * 2, 0, Math.PI * 2);
+        ctx.fill();
+        
+        // Core
+        ctx.fillStyle = '#000000';
+        ctx.beginPath();
+        ctx.arc(this.x, this.y, this.radius, 0, Math.PI * 2);
+        ctx.fill();
+        
+        // Trail
+        if (Math.random() > 0.5) {
+            gameState.particles.push(new Particle(this.x, this.y, '#8B0000', Math.random() * 0.5, Math.random() * Math.PI * 2, 15));
+        }
+    }
+    isOffScreen() {
+        return this.x < -50 || this.x > GAME_WIDTH + 50 || this.y < -50 || this.y > GAME_HEIGHT + 50;
+    }
+}
+
 class Enemy {
     constructor(type) {
         const side = Math.floor(Math.random() * 4);
@@ -278,6 +321,35 @@ class Enemy {
         
         // Don't move if stunned
         if (this.stunned) return;
+        
+        // Final boss projectile attack
+        if (this.isFinalBoss) {
+            if (!this.attackTimer) this.attackTimer = 0;
+            this.attackTimer++;
+            
+            // Fire projectiles every 120 frames (2 seconds)
+            if (this.attackTimer >= 120) {
+                this.attackTimer = 0;
+                // Fire 3 projectiles in a spread pattern
+                for (let i = 0; i < 3; i++) {
+                    const spreadAngle = (i - 1) * 0.3; // -0.3, 0, 0.3 radians
+                    const baseAngle = Math.atan2(target.y - this.y, target.x - this.x);
+                    const angle = baseAngle + spreadAngle;
+                    const offsetX = Math.cos(angle) * this.radius;
+                    const offsetY = Math.sin(angle) * this.radius;
+                    gameState.bossProjectiles.push(
+                        new BossProjectile(
+                            this.x + offsetX, 
+                            this.y + offsetY, 
+                            target.x, 
+                            target.y, 
+                            this.damage * 0.5
+                        )
+                    );
+                }
+                audioManager.playSFX('hit');
+            }
+        }
         
         const dx = target.x - this.x; const dy = target.y - this.y; const dist = Math.sqrt(dx * dx + dy * dy);
         if (dist > 0) { this.x += (dx / dist) * this.speed; this.y += (dy / dist) * this.speed; }
@@ -1370,12 +1442,18 @@ class Player {
 }
 
 // --- GAME STATE & ENGINE ---
-const gameState = { player: null, enemies: [], expOrbs: [], projectiles: [], damageNumbers: [], particles: [], treasureChests: [], showDamageNumbers: true, isPaused: false, selectedCharacter: 'knight', selectedStage: 'forest', lastBossSpawnTime: 0, finalBossSpawned: false, bossCount: 0 };
+const gameState = { player: null, enemies: [], expOrbs: [], projectiles: [], damageNumbers: [], particles: [], treasureChests: [], bossProjectiles: [], showDamageNumbers: true, isPaused: false, selectedCharacter: 'knight', selectedStage: 'forest', lastBossSpawnTime: 0, finalBossSpawned: false, bossCount: 0 };
 const canvas = document.getElementById('gameCanvas'); const ctx = canvas.getContext('2d');
 let gameTime = 0, lastTime = 0, nextSpawnTime = 0, loopRunning = false;
 const keys = { w: false, s: false, a: false, d: false, ArrowUp: false, ArrowDown: false, ArrowLeft: false, ArrowRight: false };
 
-window.addEventListener('keydown', e => { if (keys.hasOwnProperty(e.key)) keys[e.key] = true; });
+window.addEventListener('keydown', e => { 
+    if (keys.hasOwnProperty(e.key)) keys[e.key] = true;
+    // ESC key to toggle pause
+    if (e.key === 'Escape' && loopRunning && !document.getElementById('level-up-modal').classList.contains('hidden') === false) {
+        togglePause();
+    }
+});
 window.addEventListener('keyup', e => { if (keys.hasOwnProperty(e.key)) keys[e.key] = false; });
 
 function updateUI() {
@@ -1441,6 +1519,9 @@ function showLevelUpMenu() {
         document.getElementById('reroll-count').innerText = p.rerolls;
         document.getElementById('reroll-btn').disabled = p.rerolls <= 0;
     }
+    
+    // Keep inventory visible during level up
+    updateInventory();
 
     const options = [];
     const scale = (upgrades, rarity) => upgrades.map(u => ({ ...u, val: (['count', 'passive_amount', 'passive_armor'].includes(u.type) ? Math.ceil(u.val * rarity.mult) : u.val * rarity.mult) }));
@@ -1682,6 +1763,19 @@ function checkCollisions() {
             collectTreasure(chest);
             // Remove chest after collection
             gameState.treasureChests.splice(i, 1);
+        }
+    }
+    
+    // Boss projectile collision with player
+    for (let i = gameState.bossProjectiles.length - 1; i >= 0; i--) {
+        const proj = gameState.bossProjectiles[i];
+        if (Math.hypot(p.x - proj.x, p.y - proj.y) < p.radius + proj.radius) {
+            p.takeDamage(proj.damage, audioManager, endGame);
+            // Explosion particles
+            for (let j = 0; j < 10; j++) {
+                gameState.particles.push(new Particle(proj.x, proj.y, '#8B0000', Math.random() * 3 + 1, Math.random() * Math.PI * 2, 20));
+            }
+            gameState.bossProjectiles.splice(i, 1);
         }
     }
 }
@@ -2078,6 +2172,10 @@ function endGame(isCleared = false) {
         audioManager.playSFX('levelup');
         document.getElementById('game-clear-modal').classList.remove('hidden');
         document.getElementById('clear-final-time').innerText = formatTime(gameTime);
+        
+        // Mark stage as cleared
+        const stage = gameState.selectedStage;
+        localStorage.setItem('stage_cleared_' + stage, 'true');
     } else {
         audioManager.playSFX('gameover');
         document.getElementById('game-over-modal').classList.remove('hidden');
@@ -2116,12 +2214,57 @@ function loop(timestamp) {
     gameState.enemies.forEach(e => { e.update(p); e.draw(ctx); });
     gameState.expOrbs.forEach(o => o.draw(ctx));
     gameState.treasureChests.forEach(chest => chest.draw(ctx));
+    
+    // Update and draw boss projectiles
+    for (let i = gameState.bossProjectiles.length - 1; i >= 0; i--) {
+        const proj = gameState.bossProjectiles[i];
+        proj.update();
+        proj.draw(ctx);
+        if (proj.isOffScreen()) {
+            gameState.bossProjectiles.splice(i, 1);
+        }
+    }
+    
     gameState.particles.forEach((p, i) => { p.update(); p.draw(ctx); if (p.life <= 0) gameState.particles.splice(i, 1); });
     gameState.damageNumbers.forEach((d, i) => { d.update(); d.draw(ctx); if (d.life <= 0) gameState.damageNumbers.splice(i, 1); });
     checkCollisions(); updateUI(); requestAnimationFrame(loop);
 }
 
 // --- GLOBAL ATTACHMENTS ---
+window.togglePause = () => {
+    if (!loopRunning) return;
+    
+    // Don't pause if level up modal is open
+    if (!document.getElementById('level-up-modal').classList.contains('hidden')) return;
+    
+    const pauseModal = document.getElementById('pause-modal');
+    if (gameState.isPaused) {
+        // Resume game
+        resumeGame();
+    } else {
+        // Pause game
+        gameState.isPaused = true;
+        pauseModal.classList.remove('hidden');
+        audioManager.playSFX('click');
+    }
+};
+
+window.resumeGame = () => {
+    gameState.isPaused = false;
+    document.getElementById('pause-modal').classList.add('hidden');
+    lastTime = performance.now();
+    audioManager.playSFX('click');
+};
+
+window.returnToTitle = () => {
+    loopRunning = false;
+    gameState.isPaused = false;
+    document.getElementById('pause-modal').classList.add('hidden');
+    document.getElementById('title-screen').classList.remove('hidden');
+    audioManager.playSFX('click');
+    location.reload();
+};
+
 window.backToTitle = () => {
     document.getElementById('stage-select-screen').classList.add('hidden');
     document.getElementById('character-select-screen').classList.add('hidden');
@@ -2144,23 +2287,90 @@ window.goToStageSelect = () => {
     document.getElementById('stage-select-screen').classList.remove('hidden');
     audioManager.init();
 
-    // Update best times in character cards
+    // Check stage unlock status
+    const forestCleared = localStorage.getItem('stage_cleared_forest') === 'true';
+    const libraryCleared = localStorage.getItem('stage_cleared_library') === 'true';
+    
+    // Update best times and lock/unlock stages
     ['forest', 'library', 'hell'].forEach(stage => {
         const best = localStorage.getItem('best_time_' + stage);
         const el = document.getElementById('best-time-' + stage);
         if (el) {
             el.innerText = 'Best: ' + (best ? formatTime(parseFloat(best)) : '--:--');
         }
+        
+        const card = document.querySelector(`.stage-card.${stage === 'forest' ? 'easy' : stage === 'library' ? 'normal' : 'hard'}`);
+        if (card) {
+            // Forest is always unlocked
+            if (stage === 'forest') {
+                card.style.opacity = '1';
+                card.style.pointerEvents = 'auto';
+                card.style.filter = 'none';
+            } 
+            // Library requires forest clear
+            else if (stage === 'library') {
+                if (forestCleared) {
+                    card.style.opacity = '1';
+                    card.style.pointerEvents = 'auto';
+                    card.style.filter = 'none';
+                } else {
+                    card.style.opacity = '0.5';
+                    card.style.pointerEvents = 'none';
+                    card.style.filter = 'grayscale(1)';
+                    if (!card.querySelector('.locked-text')) {
+                        const lockedText = document.createElement('div');
+                        lockedText.className = 'locked-text';
+                        lockedText.textContent = '🔒 神秘の森をクリアしてください';
+                        lockedText.style.cssText = 'color: #e74c3c; font-size: 12px; margin-top: 8px; font-weight: bold;';
+                        card.appendChild(lockedText);
+                    }
+                }
+            }
+            // Hell requires library clear
+            else if (stage === 'hell') {
+                if (libraryCleared) {
+                    card.style.opacity = '1';
+                    card.style.pointerEvents = 'auto';
+                    card.style.filter = 'none';
+                } else {
+                    card.style.opacity = '0.5';
+                    card.style.pointerEvents = 'none';
+                    card.style.filter = 'grayscale(1)';
+                    if (!card.querySelector('.locked-text')) {
+                        const lockedText = document.createElement('div');
+                        lockedText.className = 'locked-text';
+                        lockedText.textContent = '🔒 失われた図書館をクリアしてください';
+                        lockedText.style.cssText = 'color: #e74c3c; font-size: 12px; margin-top: 8px; font-weight: bold;';
+                        card.appendChild(lockedText);
+                    }
+                }
+            }
+        }
     });
 };
 window.selectStage = (stage) => {
+    // Check if stage is unlocked
+    if (stage === 'library') {
+        const forestCleared = localStorage.getItem('stage_cleared_forest') === 'true';
+        if (!forestCleared) {
+            audioManager.playSFX('hurt');
+            return;
+        }
+    } else if (stage === 'hell') {
+        const libraryCleared = localStorage.getItem('stage_cleared_library') === 'true';
+        if (!libraryCleared) {
+            audioManager.playSFX('hurt');
+            return;
+        }
+    }
+    
     gameState.selectedStage = stage;
     document.getElementById('stage-select-screen').classList.add('hidden');
     document.getElementById('character-select-screen').classList.remove('hidden');
 };
 window.goToCharacterSelect = () => { document.getElementById('title-screen').classList.add('hidden'); document.getElementById('character-select-screen').classList.remove('hidden'); audioManager.init(); };
 window.selectCharacter = (char) => { gameState.selectedCharacter = char; document.getElementById('character-select-screen').classList.add('hidden'); document.getElementById('start-screen').classList.remove('hidden'); audioManager.startBGM(); };
-window.startGame = (type) => { document.getElementById('start-screen').classList.add('hidden'); gameState.player = new Player(type, gameState.selectedCharacter); gameState.enemies = []; gameState.expOrbs = []; gameState.treasureChests = []; gameState.damageNumbers = []; gameState.particles = []; gameState.lastBossSpawnTime = 0; gameState.finalBossSpawned = false; gameState.bossCount = 0; gameTime = 0; nextSpawnTime = 1; lastTime = performance.now(); loopRunning = true; updateInventory(); requestAnimationFrame(loop); };
+window.startGame = (type) => { document.getElementById('start-screen').classList.add('hidden'); gameState.player = new Player(type, gameState.selectedCharacter); gameState.enemies = []; gameState.expOrbs = []; gameState.treasureChests = []; gameState.damageNumbers = []; gameState.particles = []; gameState.bossProjectiles = []; gameState.lastBossSpawnTime = 0; gameState.finalBossSpawned = false; gameState.bossCount = 0; gameTime = 0; nextSpawnTime = 1; lastTime = performance.now(); loopRunning = true; updateInventory(); requestAnimationFrame(loop); };
 window.toggleSettings = () => { document.getElementById('settings-modal').classList.toggle('hidden'); document.body.classList.toggle('settings-active'); const btn = document.getElementById('btn-toggle-dmg'); if (btn) btn.innerText = gameState.showDamageNumbers ? t('settings_hide_dmg') : t('settings_show_dmg'); };
 window.toggleDamageNumbers = () => { gameState.showDamageNumbers = !gameState.showDamageNumbers; const btn = document.getElementById('btn-toggle-dmg'); if (btn) btn.innerText = gameState.showDamageNumbers ? t('settings_hide_dmg') : t('settings_show_dmg'); };
 window.changeLang = (lang) => { currentLang = lang; updateTexts(); };

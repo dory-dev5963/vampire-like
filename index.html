@@ -21,6 +21,7 @@
                     <div id="level">Level: 1</div>
                     <div id="time">Time: 00:00</div>
                 </div>
+                <button id="pause-btn" class="pause-btn" onclick="togglePause()" title="一時停止 (ESC)">⏸</button>
             </div>
 
             <div id="bottom-bars">
@@ -59,6 +60,14 @@
                 <p class="clear-desc">Congratulations! You survived for <span id="clear-final-time"></span></p>
                 <div class="clear-stars">★★★</div>
                 <button onclick="location.reload()" data-i18n="retry">Retry</button>
+            </div>
+            <!-- Pause Menu -->
+            <div id="pause-modal" class="hidden">
+                <h2>一時停止</h2>
+                <div class="pause-menu">
+                    <button class="menu-btn primary" onclick="resumeGame()">▶ ゲームを再開</button>
+                    <button class="menu-btn" onclick="returnToTitle()">🏠 タイトルに戻る</button>
+                </div>
             </div>
             <!-- Title Screen -->
             <div id="title-screen">
