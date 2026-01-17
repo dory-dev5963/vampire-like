@@ -27,16 +27,16 @@ function formatTime(s) {
 }
 
 const ENEMY_TYPES = [
-    { color: '#e74c3c', speed: 1.0, hp: 69, radius: 12, damage: 5, exp: 5 },    // 0-30s
-    { color: '#00d2d3', speed: 2.0, hp: 54, radius: 10, damage: 8, exp: 10 },    // 30-60s
-    { color: '#10ac84', speed: 0.6, hp: 339, radius: 20, damage: 15, exp: 25 },  // 60-90s
-    { color: '#5f27cd', speed: 1.3, hp: 810, radius: 15, damage: 20, exp: 100 },// 90-120s
-    { color: '#e67e22', speed: 1.5, hp: 540, radius: 12, damage: 15, exp: 80 },  // 120-150s Swarm
-    { color: '#2980b9', speed: 1.8, hp: 1350, radius: 18, damage: 25, exp: 200 },// 150-180s
-    { color: '#2c3e50', speed: 0.8, hp: 3375, radius: 25, damage: 40, exp: 500 },// 180-210s
-    { color: '#ecf0f1', speed: 2.5, hp: 1014, radius: 15, damage: 30, exp: 300 },// 210-240s
-    { color: '#8e44ad', speed: 1.0, hp: 6750, radius: 40, damage: 50, exp: 1000 },// 240-270s
-    { color: '#c0392b', speed: 1.5, hp: 13500, radius: 20, damage: 60, exp: 2000 } // 270-300s
+    { color: '#e74c3c', speed: 1.0, hp: 207, radius: 12, damage: 5, exp: 5 },    // 0-30s
+    { color: '#00d2d3', speed: 2.0, hp: 162, radius: 10, damage: 8, exp: 10 },    // 30-60s
+    { color: '#10ac84', speed: 0.6, hp: 1017, radius: 20, damage: 15, exp: 25 },  // 60-90s
+    { color: '#5f27cd', speed: 1.3, hp: 2430, radius: 15, damage: 20, exp: 100 },// 90-120s
+    { color: '#e67e22', speed: 1.5, hp: 1620, radius: 12, damage: 15, exp: 80 },  // 120-150s Swarm
+    { color: '#2980b9', speed: 1.8, hp: 4050, radius: 18, damage: 25, exp: 200 },// 150-180s
+    { color: '#2c3e50', speed: 0.8, hp: 10125, radius: 25, damage: 40, exp: 500 },// 180-210s
+    { color: '#ecf0f1', speed: 2.5, hp: 3042, radius: 15, damage: 30, exp: 300 },// 210-240s
+    { color: '#8e44ad', speed: 1.0, hp: 20250, radius: 40, damage: 50, exp: 1000 },// 240-270s
+    { color: '#c0392b', speed: 1.5, hp: 40500, radius: 20, damage: 60, exp: 2000 } // 270-300s
 ];
 
 const BOSS_TYPES = {
