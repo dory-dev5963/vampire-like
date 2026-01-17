@@ -27,7 +27,7 @@ function formatTime(s) {
 }
 
 const ENEMY_TYPES = [
-    { color: '#e74c3c', speed: 1.0, hp: 300, radius: 12, damage: 1, exp: 5 },    // 0-30s
+    { color: '#e74c3c', speed: 1.0, hp: 200, radius: 12, damage: 1, exp: 5 },    // 0-30s
     { color: '#00d2d3', speed: 2.0, hp: 250, radius: 10, damage: 2, exp: 10 },    // 30-60s
     { color: '#10ac84', speed: 0.6, hp: 1200, radius: 20, damage: 3, exp: 25 },  // 60-90s
     { color: '#5f27cd', speed: 1.3, hp: 2500, radius: 15, damage: 3, exp: 100 },// 90-120s
@@ -2216,20 +2216,21 @@ function collectTreasure(chest) {
 
 function playTreasureEffect(x, y, rewardCount) {
     const color = rewardCount === 5 ? '#f1c40f' : rewardCount === 3 ? '#3498db' : '#95a5a6';
-    const particleCount = rewardCount === 5 ? 100 : rewardCount === 3 ? 60 : 30;
+    // Reduced particle counts for better performance
+    const particleCount = rewardCount === 5 ? 50 : rewardCount === 3 ? 30 : 15;
     const speed = rewardCount === 5 ? 8 : rewardCount === 3 ? 6 : 4;
     
-    // Main particle burst
+    // Main particle burst (reduced)
     for (let i = 0; i < particleCount; i++) {
         gameState.particles.push(
             new Particle(x, y, color, Math.random() * speed + 2, Math.random() * Math.PI * 2, 80)
         );
     }
     
-    // Multiple rings for all treasure types
-    const ringCount = rewardCount === 5 ? 3 : rewardCount === 3 ? 2 : 1;
+    // Multiple rings for all treasure types (reduced)
+    const ringCount = rewardCount === 5 ? 2 : rewardCount === 3 ? 1 : 1;
     for (let ring = 0; ring < ringCount; ring++) {
-        const ringSize = 30 + ring * 10;
+        const ringSize = 20 + ring * 8;
         for (let i = 0; i < ringSize; i++) {
             const angle = (i / ringSize) * Math.PI * 2;
             gameState.particles.push(
@@ -2238,11 +2239,11 @@ function playTreasureEffect(x, y, rewardCount) {
         }
     }
     
-    // Extra star burst for legendary
+    // Extra star burst for legendary (reduced)
     if (rewardCount === 5) {
-        for (let i = 0; i < 8; i++) {
-            const angle = (i / 8) * Math.PI * 2;
-            for (let j = 0; j < 5; j++) {
+        for (let i = 0; i < 4; i++) {
+            const angle = (i / 4) * Math.PI * 2;
+            for (let j = 0; j < 3; j++) {
                 gameState.particles.push(
                     new Particle(x, y, '#ffffff', 3 + j, angle + (Math.random() - 0.5) * 0.3, 60)
                 );
@@ -2437,22 +2438,48 @@ function loop(timestamp) {
     
     if (gameTime > nextSpawnTime && gameTime < CLEAR_TIME) { spawnEnemy(); nextSpawnTime = gameTime + Math.max(0.2, 2.0 - (gameTime / 60)); }
     ctx.fillStyle = STAGES[gameState.selectedStage].bgColor; ctx.fillRect(0, 0, canvas.width, canvas.height); const p = gameState.player; p.update(keys); p.draw(ctx);
-    gameState.enemies.forEach(e => { e.update(p); e.draw(ctx); });
+    // Update and draw enemies (remove off-screen and dead enemies)
+    gameState.enemies = gameState.enemies.filter(e => {
+        e.update(p);
+        e.draw(ctx);
+        // Remove enemies that are too far off screen (beyond 2000px)
+        const distFromCenter = Math.hypot(e.x - GAME_WIDTH/2, e.y - GAME_HEIGHT/2);
+        return e.hp > 0 && distFromCenter < 3000;
+    });
+    // Update and draw exp orbs (limit to 300 for performance)
     gameState.expOrbs.forEach(o => o.draw(ctx));
-    gameState.treasureChests.forEach(chest => chest.draw(ctx));
-    
-    // Update and draw boss projectiles
-    for (let i = gameState.bossProjectiles.length - 1; i >= 0; i--) {
-        const proj = gameState.bossProjectiles[i];
-        proj.update();
-        proj.draw(ctx);
-        if (proj.isOffScreen()) {
-            gameState.bossProjectiles.splice(i, 1);
-        }
+    if (gameState.expOrbs.length > 300) {
+        gameState.expOrbs = gameState.expOrbs.slice(-300);
     }
     
-    gameState.particles.forEach((p, i) => { p.update(); p.draw(ctx); if (p.life <= 0) gameState.particles.splice(i, 1); });
-    gameState.damageNumbers.forEach((d, i) => { d.update(); d.draw(ctx); if (d.life <= 0) gameState.damageNumbers.splice(i, 1); });
+    gameState.treasureChests.forEach(chest => chest.draw(ctx));
+    
+    // Update and draw boss projectiles (more efficient with filter)
+    gameState.bossProjectiles = gameState.bossProjectiles.filter(proj => {
+        proj.update();
+        proj.draw(ctx);
+        return !proj.isOffScreen();
+    });
+    
+    // Update and draw particles (limit to 500 for performance)
+    gameState.particles = gameState.particles.filter(p => {
+        p.update();
+        p.draw(ctx);
+        return p.life > 0;
+    });
+    if (gameState.particles.length > 500) {
+        gameState.particles = gameState.particles.slice(-500);
+    }
+    
+    // Update and draw damage numbers (limit to 100 for performance)
+    gameState.damageNumbers = gameState.damageNumbers.filter(d => {
+        d.update();
+        d.draw(ctx);
+        return d.life > 0;
+    });
+    if (gameState.damageNumbers.length > 100) {
+        gameState.damageNumbers = gameState.damageNumbers.slice(-100);
+    }
     checkCollisions(); updateUI(); requestAnimationFrame(loop);
 }
 
