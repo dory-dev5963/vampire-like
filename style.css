@@ -184,7 +184,8 @@ body.settings-active #bottom-bars {
 #title-screen,
 #character-select-screen,
 #stage-select-screen,
-#start-screen {
+#start-screen,
+#upgrade-shop-screen {
     position: absolute;
     top: 0;
     left: 0;
@@ -310,7 +311,9 @@ body.settings-active #bottom-bars {
     display: flex;
     align-items: center;
     width: 100%;
-    margin: 10px 0;
+    max-width: 600px;
+    min-height: 80px;
+    margin: 10px auto;
     padding: 10px;
     background: #333;
     color: white;

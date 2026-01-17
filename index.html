@@ -20,6 +20,7 @@
                 <div id="level-time-container">
                     <div id="level">Level: 1</div>
                     <div id="time">Time: 00:00</div>
+                    <div id="coins" style="color: #FFD700; font-size: 18px; margin-top: 5px;">💰 <span data-i18n="coins">Coins: </span><span id="coin-count">0</span></div>
                 </div>
                 <button id="pause-btn" class="pause-btn" onclick="togglePause()" title="一時停止 (ESC)">⏸</button>
             </div>
@@ -76,6 +77,7 @@
                 <div class="title-menu">
                     <button class="menu-btn primary" onclick="goToStageSelect()" data-i18n="start_game">START
                         GAME</button>
+                    <button class="menu-btn" onclick="toggleUpgradeShop()" data-i18n="permanent_upgrades">永続強化</button>
                     <button class="menu-btn" onclick="toggleEvolutionGuide()" data-i18n="evolution_guide">進化一覧</button>
                     <button class="menu-btn" onclick="toggleLibrary()" data-i18n="library">Library</button>
                     <button class="menu-btn" onclick="toggleSettings()" data-i18n="settings">Settings</button>
@@ -86,12 +88,24 @@
             <div id="evolution-guide-screen" class="hidden">
                 <h2>武器進化一覧</h2>
                 <div class="evolution-guide-intro">
-                    <p>武器がレベル6に達し、宝箱を開けると武器が進化します！</p>
+                    <p>武器がレベル6に達し、宝箱を開けると武器が進化します!</p>
                 </div>
                 <div id="evolution-list" class="evolution-list">
                     <!-- Will be populated by JavaScript -->
                 </div>
                 <button class="back-btn" onclick="toggleEvolutionGuide()">戻る</button>
+            </div>
+
+            <!-- Upgrade Shop Screen -->
+            <div id="upgrade-shop-screen" class="hidden">
+                <h2 data-i18n="upgrade_shop">強化ショップ</h2>
+                <div style="color: #FFD700; font-size: 24px; margin: 20px 0;">
+                    💰 <span data-i18n="current_coins">所持コイン: </span><span id="shop-coin-count">0</span>
+                </div>
+                <div id="upgrade-list" class="upgrade-list">
+                    <!-- Will be populated by JavaScript -->
+                </div>
+                <button class="back-btn" onclick="toggleUpgradeShop()">戻る</button>
             </div>
 
             <!-- Stage Selection Screen -->

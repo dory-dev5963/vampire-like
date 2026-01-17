@@ -40,11 +40,11 @@ const ENEMY_TYPES = [
 ];
 
 const BOSS_TYPES = {
-    minute_boss_1: { color: '#ff6b6b', speed: 0.8, hp: 400, radius: 32, damage: 25, exp: 400, isBoss: true, glowIntensity: 0.3 },
-    minute_boss_2: { color: '#ff4757', speed: 0.9, hp: 800, radius: 36, damage: 35, exp: 600, isBoss: true, glowIntensity: 0.5 },
-    minute_boss_3: { color: '#ee5a6f', speed: 1.0, hp: 1400, radius: 40, damage: 50, exp: 800, isBoss: true, glowIntensity: 0.7 },
-    minute_boss_4: { color: '#c23616', speed: 1.2, hp: 2200, radius: 45, damage: 70, exp: 1200, isBoss: true, glowIntensity: 0.9 },
-    final_boss: { color: '#8B0000', speed: 1.3, hp: 50000, radius: 60, damage: 80, exp: 0, isBoss: true, isFinalBoss: true, glowIntensity: 1.5, pulseEffect: true }
+    minute_boss_1: { color: '#ff6b6b', speed: 1.6, hp: 2400, radius: 32, damage: 25, exp: 400, isBoss: true, glowIntensity: 0.3 },
+    minute_boss_2: { color: '#ff4757', speed: 1.8, hp: 4800, radius: 36, damage: 35, exp: 600, isBoss: true, glowIntensity: 0.5 },
+    minute_boss_3: { color: '#ee5a6f', speed: 2.0, hp: 8400, radius: 40, damage: 50, exp: 800, isBoss: true, glowIntensity: 0.7 },
+    minute_boss_4: { color: '#c23616', speed: 2.4, hp: 13200, radius: 45, damage: 70, exp: 1200, isBoss: true, glowIntensity: 0.9 },
+    final_boss: { color: '#8B0000', speed: 1.95, hp: 100000, radius: 60, damage: 80, exp: 0, isBoss: true, isFinalBoss: true, glowIntensity: 1.5, pulseEffect: true }
 };
 
 const STAGES = {
@@ -105,7 +105,11 @@ const TRANSLATIONS = {
         game_title: "BLOOD SURVIVOR", select_weapon: "Select Weapon", choose_start_weapon: "Choose your starting weapon:", back: "Back",
         select_stage: "Select Stage", stage_forest: "Mystic Forest", stage_forest_desc: "Difficulty: Easy", stage_library: "Lost Library", stage_library_desc: "Difficulty: Normal", stage_hell: "Crimson Hell", stage_hell_desc: "Difficulty: Hard",
         cross_weapon: "Cross", cross_desc: "Boomerang attack", axe_weapon: "Axe", axe_desc: "High arc piercing attack", whip_weapon: "Whip", whip_desc: "Horizontal sweep with knockback",
-        fire_wand_weapon: "Fire Wand", fire_wand_desc: "High damage fireballs", mine_weapon: "Mine", mine_desc: "Deploys explosive traps", spear_weapon: "Spear", spear_desc: "Pure piercing projectile"
+        fire_wand_weapon: "Fire Wand", fire_wand_desc: "High damage fireballs", mine_weapon: "Mine", mine_desc: "Deploys explosive traps", spear_weapon: "Spear", spear_desc: "Pure piercing projectile",
+        coins: "Coins: ", permanent_upgrades: "Permanent Upgrades", upgrade_shop: "Upgrade Shop", current_coins: "Current Coins: ", upgrade_base_hp: "Base HP +10",
+        upgrade_base_damage: "Base Damage +5%", upgrade_base_speed: "Base Speed +5%", upgrade_rerolls: "Reroll +1", upgrade_exp_gain: "Exp Gain +10%",
+        upgrade_pickup_range: "Pickup Range +10%", upgrade_armor: "Armor +1", upgrade_attack_speed: "Attack Speed +5%", upgrade_crit_rate: "Crit Rate +2%", upgrade_coin_bonus: "Coin Gain +10%", upgrade_coin_drop_rate: "Coin Drop Rate +1%",
+        cost: "Cost: ", max_level: "MAX", insufficient_funds: "Not enough coins!"
     },
     ja: {
         orbit_weapon: "オービット", orbit_desc: "周囲を回転する防御オーブ", wand_weapon: "マジックワンド", wand_desc: "近くの敵を攻撃", aura_weapon: "オーラ", aura_desc: "周囲のエリアにダメージ",
@@ -138,7 +142,11 @@ const TRANSLATIONS = {
         game_title: "ブラッド・サバイバー", select_weapon: "武器の選択", choose_start_weapon: "最初の武器を選択してください:", back: "戻る",
         select_stage: "ステージの選択", stage_forest: "神秘の森", stage_forest_desc: "難易度: イージー", stage_library: "失われた図書館", stage_library_desc: "難易度: ノーマル", stage_hell: "紅蓮の地獄", stage_hell_desc: "難易度: ハード",
         cross_weapon: "十字架", cross_desc: "ブーメラン攻撃", axe_weapon: "手斧", axe_desc: "放物線を描く貫通攻撃", whip_weapon: "ムチ", whip_desc: "水平方向へのなぎ払い攻撃",
-        fire_wand_weapon: "ファイアワンド", fire_wand_desc: "高火力の火球攻撃", mine_weapon: "地雷", mine_desc: "接触で爆発する罠を設置", spear_weapon: "槍", spear_desc: "敵を貫通する直線攻撃"
+        fire_wand_weapon: "ファイアワンド", fire_wand_desc: "高火力の火球攻撃", mine_weapon: "地雷", mine_desc: "接触で爆発する罠を設置", spear_weapon: "槍", spear_desc: "敵を貫通する直線攻撃",
+        coins: "コイン: ", permanent_upgrades: "永続強化", upgrade_shop: "強化ショップ", current_coins: "所持コイン: ", upgrade_base_hp: "基礎HP +10",
+        upgrade_base_damage: "基礎攻撃力 +5%", upgrade_base_speed: "基礎速度 +5%", upgrade_rerolls: "リロール数 +1", upgrade_exp_gain: "経験値獲得 +10%",
+        upgrade_pickup_range: "アイテム取得範囲 +10%", upgrade_armor: "ダメージ軽減 +1", upgrade_attack_speed: "攻撃速度 +5%", upgrade_crit_rate: "クリティカル率 +2%", upgrade_coin_bonus: "コイン獲得量 +10%", upgrade_coin_drop_rate: "コイン取得率 +1%",
+        cost: "コスト: ", max_level: "最大", insufficient_funds: "コインが不足しています！"
     }
 };
 
@@ -322,32 +330,97 @@ class Enemy {
         // Don't move if stunned
         if (this.stunned) return;
         
-        // Final boss projectile attack
-        if (this.isFinalBoss) {
+        // Boss projectile attacks
+        if (this.isBoss) {
             if (!this.attackTimer) this.attackTimer = 0;
+            if (!this.attackPattern) this.attackPattern = 0;
             this.attackTimer++;
             
-            // Fire projectiles every 120 frames (2 seconds)
-            if (this.attackTimer >= 120) {
-                this.attackTimer = 0;
-                // Fire 3 projectiles in a spread pattern
-                for (let i = 0; i < 3; i++) {
-                    const spreadAngle = (i - 1) * 0.3; // -0.3, 0, 0.3 radians
-                    const baseAngle = Math.atan2(target.y - this.y, target.x - this.x);
-                    const angle = baseAngle + spreadAngle;
-                    const offsetX = Math.cos(angle) * this.radius;
-                    const offsetY = Math.sin(angle) * this.radius;
-                    gameState.bossProjectiles.push(
-                        new BossProjectile(
-                            this.x + offsetX, 
-                            this.y + offsetY, 
-                            target.x, 
-                            target.y, 
-                            this.damage * 0.5
-                        )
-                    );
+            if (this.isFinalBoss) {
+                // Final boss - complex bullet hell patterns
+                if (this.attackTimer >= 30) { // Fire every 0.5 seconds (3x faster)
+                    this.attackTimer = 0;
+                    this.attackPattern = (this.attackPattern + 1) % 3;
+                    
+                    if (this.attackPattern === 0) {
+                        // Spiral pattern - 8 projectiles in a circle
+                        for (let i = 0; i < 8; i++) {
+                            const angle = (Math.PI * 2 * i / 8) + gameTime * 2;
+                            const offsetX = Math.cos(angle) * this.radius;
+                            const offsetY = Math.sin(angle) * this.radius;
+                            gameState.bossProjectiles.push(
+                                new BossProjectile(
+                                    this.x + offsetX, 
+                                    this.y + offsetY, 
+                                    this.x + Math.cos(angle) * 500,
+                                    this.y + Math.sin(angle) * 500,
+                                    this.damage * 0.4
+                                )
+                            );
+                        }
+                    } else if (this.attackPattern === 1) {
+                        // Aimed spread - 5 projectiles toward player
+                        const baseAngle = Math.atan2(target.y - this.y, target.x - this.x);
+                        for (let i = 0; i < 5; i++) {
+                            const spreadAngle = (i - 2) * 0.25;
+                            const angle = baseAngle + spreadAngle;
+                            const offsetX = Math.cos(angle) * this.radius;
+                            const offsetY = Math.sin(angle) * this.radius;
+                            gameState.bossProjectiles.push(
+                                new BossProjectile(
+                                    this.x + offsetX, 
+                                    this.y + offsetY, 
+                                    target.x + Math.cos(angle) * 100, 
+                                    target.y + Math.sin(angle) * 100, 
+                                    this.damage * 0.5
+                                )
+                            );
+                        }
+                    } else {
+                        // Cross pattern - 4 directions
+                        for (let i = 0; i < 4; i++) {
+                            const angle = (Math.PI / 2 * i) + (Math.PI / 4);
+                            for (let j = 0; j < 3; j++) {
+                                const offsetX = Math.cos(angle) * (this.radius + j * 15);
+                                const offsetY = Math.sin(angle) * (this.radius + j * 15);
+                                gameState.bossProjectiles.push(
+                                    new BossProjectile(
+                                        this.x + offsetX, 
+                                        this.y + offsetY, 
+                                        this.x + Math.cos(angle) * 600,
+                                        this.y + Math.sin(angle) * 600,
+                                        this.damage * 0.35
+                                    )
+                                );
+                            }
+                        }
+                    }
+                    audioManager.playSFX('hit');
                 }
-                audioManager.playSFX('hit');
+            } else {
+                // Regular bosses - simpler attacks
+                if (this.attackTimer >= 75) { // Fire every 1.25 seconds (2x faster)
+                    this.attackTimer = 0;
+                    // Fire 4-5 projectiles toward player
+                    const baseAngle = Math.atan2(target.y - this.y, target.x - this.x);
+                    const projectileCount = 4 + Math.floor(this.glowIntensity * 2); // 4-5 projectiles
+                    for (let i = 0; i < projectileCount; i++) {
+                        const spreadAngle = (i - (projectileCount - 1) / 2) * 0.4;
+                        const angle = baseAngle + spreadAngle;
+                        const offsetX = Math.cos(angle) * this.radius;
+                        const offsetY = Math.sin(angle) * this.radius;
+                        gameState.bossProjectiles.push(
+                            new BossProjectile(
+                                this.x + offsetX, 
+                                this.y + offsetY, 
+                                target.x, 
+                                target.y, 
+                                this.damage * 0.4
+                            )
+                        );
+                    }
+                    audioManager.playSFX('hit');
+                }
             }
         }
         
@@ -509,6 +582,49 @@ class ExpOrb {
         else { this.color = '#2ecc71'; }
     }
     draw(ctx) { ctx.globalAlpha = 0.5; ctx.fillStyle = this.color; ctx.beginPath(); ctx.arc(this.x, this.y, this.radius, 0, Math.PI * 2); ctx.fill(); ctx.strokeStyle = 'white'; ctx.lineWidth = 1; ctx.stroke(); ctx.globalAlpha = 1.0; }
+}
+
+class Coin {
+    constructor(x, y, value) {
+        this.x = x; this.y = y; this.value = value; this.radius = 6;
+        this.color = '#FFD700';
+        this.pulseTimer = 0;
+    }
+    draw(ctx) {
+        this.pulseTimer += 0.1;
+        const pulse = Math.sin(this.pulseTimer) * 0.5 + 0.5;
+        const currentRadius = this.radius * (1 + pulse * 0.3);
+        
+        // Glow effect
+        ctx.globalAlpha = 0.3;
+        const gradient = ctx.createRadialGradient(this.x, this.y, 0, this.x, this.y, currentRadius * 2);
+        gradient.addColorStop(0, '#FFD700');
+        gradient.addColorStop(1, 'rgba(255, 215, 0, 0)');
+        ctx.fillStyle = gradient;
+        ctx.beginPath();
+        ctx.arc(this.x, this.y, currentRadius * 2, 0, Math.PI * 2);
+        ctx.fill();
+        
+        // Coin body
+        ctx.globalAlpha = 1.0;
+        ctx.fillStyle = this.color;
+        ctx.beginPath();
+        ctx.arc(this.x, this.y, currentRadius, 0, Math.PI * 2);
+        ctx.fill();
+        
+        // Shine effect
+        ctx.fillStyle = 'rgba(255, 255, 255, 0.6)';
+        ctx.beginPath();
+        ctx.arc(this.x - currentRadius * 0.3, this.y - currentRadius * 0.3, currentRadius * 0.3, 0, Math.PI * 2);
+        ctx.fill();
+        
+        // Border
+        ctx.strokeStyle = '#FFA500';
+        ctx.lineWidth = 2;
+        ctx.beginPath();
+        ctx.arc(this.x, this.y, currentRadius, 0, Math.PI * 2);
+        ctx.stroke();
+    }
 }
 
 class DamageNumber {
@@ -1318,15 +1434,60 @@ function createEvolvedWeapon(baseType, evolvedType, owner, multipliers) {
 class Player {
     constructor(weaponType, charKey) {
         const char = CHARACTERS[charKey] || CHARACTERS.knight;
+        
+        // Load permanent upgrades
+        const permanentUpgrades = getPermanentUpgrades();
+        
         this.x = GAME_WIDTH / 2; this.y = GAME_HEIGHT / 2; this.radius = 10;
-        this.moveSpeed = char.moveSpeed; this.hp = char.hp; this.maxHp = char.hp;
-        this.level = 1; this.exp = 0; this.nextLevelExp = 10; this.magnetRadius = char.magnetRadius;
+        this.moveSpeed = char.moveSpeed; 
+        
+        // Apply permanent HP upgrade
+        const baseHpBonus = PERMANENT_UPGRADES.baseHp.effect * permanentUpgrades.baseHp;
+        this.hp = char.hp + baseHpBonus; 
+        this.maxHp = char.hp + baseHpBonus;
+        
+        this.level = 1; this.exp = 0; this.nextLevelExp = 10;
         this.weapons = [createWeapon(weaponType, this)]; this.maxWeapons = 6;
         this.color = char.color; this.charType = charKey; this.skills = []; this.maxSkills = 6;
-        this.damageMult = char.attackDamage; this.areaMult = 1.0; this.cooldownMult = 1.0;
-        this.projectileCountBonus = 0; this.moveSpeedMult = 1.0; this.expMult = 1.0;
-        this.armor = char.armor; this.regenAmount = 0; this.regenTimer = 0;
-        this.projectileSpeedMult = char.projSpeed; this.durationMult = 1.0; this.rerolls = char.rerolls;
+        
+        // Apply permanent damage upgrade
+        const baseDamageBonus = PERMANENT_UPGRADES.baseDamage.effect * permanentUpgrades.baseDamage;
+        this.damageMult = char.attackDamage * (1 + baseDamageBonus);
+        
+        this.areaMult = 1.0; this.cooldownMult = 1.0;
+        this.projectileCountBonus = 0; 
+        
+        // Apply permanent speed upgrade
+        const baseSpeedBonus = PERMANENT_UPGRADES.baseSpeed.effect * permanentUpgrades.baseSpeed;
+        this.moveSpeedMult = 1.0 + baseSpeedBonus;
+        
+        // Apply permanent exp gain upgrade
+        const expGainBonus = PERMANENT_UPGRADES.expGain.effect * permanentUpgrades.expGain;
+        this.expMult = 1.0 + expGainBonus;
+        
+        // Apply permanent pickup range upgrade
+        const pickupRangeBonus = PERMANENT_UPGRADES.pickupRange.effect * permanentUpgrades.pickupRange;
+        this.magnetRadius = char.magnetRadius * (1 + pickupRangeBonus);
+        
+        // Apply permanent armor upgrade
+        const armorBonus = PERMANENT_UPGRADES.armor.effect * permanentUpgrades.armor;
+        this.armor = char.armor + armorBonus;
+        
+        // Apply permanent attack speed upgrade
+        const attackSpeedBonus = PERMANENT_UPGRADES.attackSpeed.effect * permanentUpgrades.attackSpeed;
+        this.cooldownMult = 1.0 - attackSpeedBonus;
+        
+        // Apply permanent crit rate upgrade
+        const critRateBonus = PERMANENT_UPGRADES.critRate.effect * permanentUpgrades.critRate;
+        this.critRate = critRateBonus;
+        
+        this.regenAmount = 0; this.regenTimer = 0;
+        this.projectileSpeedMult = char.projSpeed; this.durationMult = 1.0; 
+        
+        // Apply permanent reroll upgrade
+        const rerollBonus = PERMANENT_UPGRADES.rerolls.effect * permanentUpgrades.rerolls;
+        this.rerolls = char.rerolls + rerollBonus;
+        
         this.attackFrequency = char.attackFrequency; this.attackSpeed = char.attackSpeed;
     }
     update(keys) {
@@ -1442,7 +1603,7 @@ class Player {
 }
 
 // --- GAME STATE & ENGINE ---
-const gameState = { player: null, enemies: [], expOrbs: [], projectiles: [], damageNumbers: [], particles: [], treasureChests: [], bossProjectiles: [], showDamageNumbers: true, isPaused: false, selectedCharacter: 'knight', selectedStage: 'forest', lastBossSpawnTime: 0, finalBossSpawned: false, bossCount: 0 };
+const gameState = { player: null, enemies: [], expOrbs: [], projectiles: [], damageNumbers: [], particles: [], treasureChests: [], bossProjectiles: [], showDamageNumbers: true, isPaused: false, selectedCharacter: 'knight', selectedStage: 'forest', lastBossSpawnTime: 0, finalBossSpawned: false, bossCount: 0, totalCoins: 0 };
 const canvas = document.getElementById('gameCanvas'); const ctx = canvas.getContext('2d');
 let gameTime = 0, lastTime = 0, nextSpawnTime = 0, loopRunning = false;
 const keys = { w: false, s: false, a: false, d: false, ArrowUp: false, ArrowDown: false, ArrowLeft: false, ArrowRight: false };
@@ -1465,6 +1626,7 @@ function updateUI() {
     document.getElementById('hp-text').innerText = Math.floor(gameState.player.hp) + '/' + Math.floor(gameState.player.maxHp);
     document.getElementById('exp-bar-fill').style.width = Math.max(0, (gameState.player.exp / gameState.player.nextLevelExp) * 100) + '%';
     document.getElementById('exp-text').innerText = Math.floor(gameState.player.exp) + '/' + gameState.player.nextLevelExp;
+    document.getElementById('coin-count').innerText = Math.floor(gameState.totalCoins);
 }
 
 function updateInventory() {
@@ -1605,7 +1767,14 @@ window.rerollChoices = () => {
 
 function onChoiceMade() { document.getElementById('level-up-modal').classList.add('hidden'); gameState.isPaused = false; lastTime = performance.now(); updateInventory(); }
 
-function spawnEnemy() { const min = Math.min(9, Math.floor(gameTime / 30)); gameState.enemies.push(new Enemy(ENEMY_TYPES[min])); }
+function spawnEnemy() { 
+    const min = Math.min(9, Math.floor(gameTime / 30)); 
+    // Spawn 1.2x enemies (20% more)
+    gameState.enemies.push(new Enemy(ENEMY_TYPES[min])); 
+    if (Math.random() < 0.2) {
+        gameState.enemies.push(new Enemy(ENEMY_TYPES[min]));
+    }
+}
 
 function spawnBoss(isFinal = false) {
     let bossType;
@@ -1649,9 +1818,10 @@ function checkCollisions() {
                     d *= (1 + e.defenseDown);
                 }
                 
-                // Apply critical hit if weapon has crit chance
-                if (w.critChance && Math.random() < w.critChance) {
-                    d *= w.critDamage;
+                // Apply critical hit if weapon has crit chance or player has base crit rate
+                const totalCritChance = (w.critChance || 0) + (p.critRate || 0);
+                if (totalCritChance > 0 && Math.random() < totalCritChance) {
+                    d *= w.critDamage || 2.0;
                     if (gameState.showDamageNumbers) {
                         gameState.damageNumbers.push(new DamageNumber(e.x, e.y, d, false, true));
                     }
@@ -1746,6 +1916,22 @@ function checkCollisions() {
                     }
                 }
             }
+            
+            // Automatically add coins based on enemy exp value (5% base + upgrades)
+            const permanentUpgrades = getPermanentUpgrades();
+            const coinDropRateBonus = PERMANENT_UPGRADES.coinDropRate.effect * permanentUpgrades.coinDropRate;
+            const totalDropRate = 0.05 + coinDropRateBonus;
+            if (Math.random() < totalDropRate) {
+                const coinBonus = PERMANENT_UPGRADES.coinBonus.effect * permanentUpgrades.coinBonus;
+                const baseCoinValue = Math.max(1, Math.floor(e.exp / 5));
+                const coinValue = Math.floor(baseCoinValue * (1 + coinBonus));
+                gameState.totalCoins += coinValue;
+                const savedCoins = parseInt(localStorage.getItem('total_coins') || '0');
+                localStorage.setItem('total_coins', (savedCoins + coinValue).toString());
+                // Visual feedback for coin gain
+                gameState.damageNumbers.push(new DamageNumber(e.x, e.y - 20, '+' + coinValue + '💰', true));
+            }
+            
             gameState.expOrbs.push(new ExpOrb(e.x, e.y, e.exp));
             gameState.enemies.splice(i, 1);
         }
@@ -2370,7 +2556,27 @@ window.selectStage = (stage) => {
 };
 window.goToCharacterSelect = () => { document.getElementById('title-screen').classList.add('hidden'); document.getElementById('character-select-screen').classList.remove('hidden'); audioManager.init(); };
 window.selectCharacter = (char) => { gameState.selectedCharacter = char; document.getElementById('character-select-screen').classList.add('hidden'); document.getElementById('start-screen').classList.remove('hidden'); audioManager.startBGM(); };
-window.startGame = (type) => { document.getElementById('start-screen').classList.add('hidden'); gameState.player = new Player(type, gameState.selectedCharacter); gameState.enemies = []; gameState.expOrbs = []; gameState.treasureChests = []; gameState.damageNumbers = []; gameState.particles = []; gameState.bossProjectiles = []; gameState.lastBossSpawnTime = 0; gameState.finalBossSpawned = false; gameState.bossCount = 0; gameTime = 0; nextSpawnTime = 1; lastTime = performance.now(); loopRunning = true; updateInventory(); requestAnimationFrame(loop); };
+window.startGame = (type) => { 
+    document.getElementById('start-screen').classList.add('hidden'); 
+    gameState.player = new Player(type, gameState.selectedCharacter); 
+    gameState.enemies = []; 
+    gameState.expOrbs = []; 
+    gameState.treasureChests = []; 
+    gameState.damageNumbers = []; 
+    gameState.particles = []; 
+    gameState.bossProjectiles = []; 
+    gameState.lastBossSpawnTime = 0; 
+    gameState.finalBossSpawned = false; 
+    gameState.bossCount = 0; 
+    // Load coins from localStorage
+    gameState.totalCoins = parseInt(localStorage.getItem('total_coins') || '0');
+    gameTime = 0; 
+    nextSpawnTime = 1; 
+    lastTime = performance.now(); 
+    loopRunning = true; 
+    updateInventory(); 
+    requestAnimationFrame(loop); 
+};
 window.toggleSettings = () => { document.getElementById('settings-modal').classList.toggle('hidden'); document.body.classList.toggle('settings-active'); const btn = document.getElementById('btn-toggle-dmg'); if (btn) btn.innerText = gameState.showDamageNumbers ? t('settings_hide_dmg') : t('settings_show_dmg'); };
 window.toggleDamageNumbers = () => { gameState.showDamageNumbers = !gameState.showDamageNumbers; const btn = document.getElementById('btn-toggle-dmg'); if (btn) btn.innerText = gameState.showDamageNumbers ? t('settings_hide_dmg') : t('settings_show_dmg'); };
 window.changeLang = (lang) => { currentLang = lang; updateTexts(); };
@@ -2468,6 +2674,166 @@ function updateEvolutionGuide() {
         evolutionList.appendChild(card);
     });
 }
+
+// --- PERMANENT UPGRADES SYSTEM ---
+const PERMANENT_UPGRADES = {
+    baseHp: { maxLevel: 10, baseCost: 100, costMultiplier: 1.5, effect: 10 },
+    baseDamage: { maxLevel: 10, baseCost: 150, costMultiplier: 1.5, effect: 0.05 },
+    baseSpeed: { maxLevel: 10, baseCost: 120, costMultiplier: 1.5, effect: 0.05 },
+    rerolls: { maxLevel: 5, baseCost: 200, costMultiplier: 2, effect: 1 },
+    expGain: { maxLevel: 10, baseCost: 180, costMultiplier: 1.5, effect: 0.1 },
+    pickupRange: { maxLevel: 10, baseCost: 140, costMultiplier: 1.5, effect: 0.1 },
+    armor: { maxLevel: 10, baseCost: 160, costMultiplier: 1.6, effect: 1 },
+    attackSpeed: { maxLevel: 10, baseCost: 170, costMultiplier: 1.5, effect: 0.05 },
+    critRate: { maxLevel: 10, baseCost: 200, costMultiplier: 1.6, effect: 0.02 },
+    coinBonus: { maxLevel: 10, baseCost: 250, costMultiplier: 1.7, effect: 0.1 },
+    coinDropRate: { maxLevel: 10, baseCost: 220, costMultiplier: 1.6, effect: 0.01 }
+};
+
+function getPermanentUpgrades() {
+    const defaultUpgrades = {
+        baseHp: 0,
+        baseDamage: 0,
+        baseSpeed: 0,
+        rerolls: 0,
+        expGain: 0,
+        pickupRange: 0,
+        armor: 0,
+        attackSpeed: 0,
+        critRate: 0,
+        coinBonus: 0,
+        coinDropRate: 0
+    };
+    
+    const saved = localStorage.getItem('permanent_upgrades');
+    if (!saved) {
+        return defaultUpgrades;
+    }
+    
+    // Merge saved data with default to handle new properties
+    const savedData = JSON.parse(saved);
+    return { ...defaultUpgrades, ...savedData };
+}
+
+function savePermanentUpgrades(upgrades) {
+    localStorage.setItem('permanent_upgrades', JSON.stringify(upgrades));
+}
+
+function getUpgradeCost(upgradeType, currentLevel) {
+    const upgrade = PERMANENT_UPGRADES[upgradeType];
+    return Math.floor(upgrade.baseCost * Math.pow(upgrade.costMultiplier, currentLevel));
+}
+
+window.toggleUpgradeShop = () => {
+    const screen = document.getElementById('upgrade-shop-screen');
+    const titleScreen = document.getElementById('title-screen');
+    
+    if (screen.classList.contains('hidden')) {
+        // Show upgrade shop
+        updateUpgradeShop();
+        titleScreen.classList.add('hidden');
+        screen.classList.remove('hidden');
+    } else {
+        // Hide upgrade shop
+        screen.classList.add('hidden');
+        titleScreen.classList.remove('hidden');
+    }
+};
+
+function updateUpgradeShop() {
+    const upgradeList = document.getElementById('upgrade-list');
+    const coinCount = document.getElementById('shop-coin-count');
+    if (!upgradeList || !coinCount) return;
+    
+    const totalCoins = parseInt(localStorage.getItem('total_coins') || '0');
+    coinCount.innerText = totalCoins;
+    
+    upgradeList.innerHTML = '';
+    
+    const upgrades = getPermanentUpgrades();
+    
+    const upgradeConfigs = [
+        { id: 'baseHp', nameKey: 'upgrade_base_hp', icon: '❤️' },
+        { id: 'baseDamage', nameKey: 'upgrade_base_damage', icon: '⚔️' },
+        { id: 'baseSpeed', nameKey: 'upgrade_base_speed', icon: '⚡' },
+        { id: 'rerolls', nameKey: 'upgrade_rerolls', icon: '🔄' },
+        { id: 'expGain', nameKey: 'upgrade_exp_gain', icon: '📈' },
+        { id: 'pickupRange', nameKey: 'upgrade_pickup_range', icon: '🧲' },
+        { id: 'armor', nameKey: 'upgrade_armor', icon: '🛡️' },
+        { id: 'attackSpeed', nameKey: 'upgrade_attack_speed', icon: '⚡' },
+        { id: 'critRate', nameKey: 'upgrade_crit_rate', icon: '🎯' },
+        { id: 'coinBonus', nameKey: 'upgrade_coin_bonus', icon: '💰' },
+        { id: 'coinDropRate', nameKey: 'upgrade_coin_drop_rate', icon: '🍀' }
+    ];
+    
+    upgradeConfigs.forEach(config => {
+        const currentLevel = upgrades[config.id];
+        const maxLevel = PERMANENT_UPGRADES[config.id].maxLevel;
+        const cost = getUpgradeCost(config.id, currentLevel);
+        const isMaxLevel = currentLevel >= maxLevel;
+        const canAfford = totalCoins >= cost;
+        
+        const card = document.createElement('div');
+        card.className = 'upgrade-card' + (isMaxLevel ? ' max-level' : '');
+        
+        let effectText = '';
+        const effect = PERMANENT_UPGRADES[config.id].effect;
+        if (config.id === 'baseHp') {
+            effectText = `+${effect * currentLevel} HP`;
+        } else if (config.id === 'armor') {
+            effectText = `+${currentLevel}`;
+        } else if (config.id === 'rerolls') {
+            effectText = `+${currentLevel}`;
+        } else if (config.id === 'baseDamage' || config.id === 'baseSpeed' || config.id === 'expGain' || config.id === 'pickupRange' || config.id === 'attackSpeed' || config.id === 'critRate' || config.id === 'coinBonus' || config.id === 'coinDropRate') {
+            effectText = `+${(effect * currentLevel * 100).toFixed(0)}%`;
+        }
+        
+        card.innerHTML = `
+            <div class="upgrade-info">
+                <div class="upgrade-name">${config.icon} ${t(config.nameKey)}</div>
+                <div class="upgrade-level">Lv. ${currentLevel} / ${maxLevel}</div>
+                <div class="upgrade-effect">${effectText}</div>
+            </div>
+            <button class="upgrade-buy-btn ${isMaxLevel ? 'max' : ''}" 
+                    onclick="buyUpgrade('${config.id}')" 
+                    ${isMaxLevel || !canAfford ? 'disabled' : ''}>
+                ${isMaxLevel ? t('max_level') : `💰 ${cost}`}
+            </button>
+        `;
+        
+        upgradeList.appendChild(card);
+    });
+}
+
+window.buyUpgrade = (upgradeType) => {
+    const totalCoins = parseInt(localStorage.getItem('total_coins') || '0');
+    const upgrades = getPermanentUpgrades();
+    const currentLevel = upgrades[upgradeType];
+    const maxLevel = PERMANENT_UPGRADES[upgradeType].maxLevel;
+    
+    if (currentLevel >= maxLevel) {
+        return;
+    }
+    
+    const cost = getUpgradeCost(upgradeType, currentLevel);
+    
+    if (totalCoins < cost) {
+        audioManager.playSFX('hurt');
+        alert(t('insufficient_funds'));
+        return;
+    }
+    
+    // Deduct coins
+    localStorage.setItem('total_coins', (totalCoins - cost).toString());
+    
+    // Increase upgrade level
+    upgrades[upgradeType] = currentLevel + 1;
+    savePermanentUpgrades(upgrades);
+    
+    // Play sound and update UI
+    audioManager.playSFX('levelup');
+    updateUpgradeShop();
+};
 
 // --- INIT ---
 updateTexts();
