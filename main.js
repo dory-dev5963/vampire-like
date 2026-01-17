@@ -1606,6 +1606,7 @@ class Player {
 const gameState = { player: null, enemies: [], expOrbs: [], projectiles: [], damageNumbers: [], particles: [], treasureChests: [], bossProjectiles: [], showDamageNumbers: true, isPaused: false, selectedCharacter: 'knight', selectedStage: 'forest', lastBossSpawnTime: 0, finalBossSpawned: false, bossCount: 0, totalCoins: 0 };
 const canvas = document.getElementById('gameCanvas'); const ctx = canvas.getContext('2d');
 let gameTime = 0, lastTime = 0, nextSpawnTime = 0, loopRunning = false;
+let selectedChoiceIndex = 0; // For level up menu keyboard navigation
 const keys = { w: false, s: false, a: false, d: false, ArrowUp: false, ArrowDown: false, ArrowLeft: false, ArrowRight: false };
 
 window.addEventListener('keydown', e => { 
@@ -1614,8 +1615,96 @@ window.addEventListener('keydown', e => {
     if (e.key === 'Escape' && loopRunning && !document.getElementById('level-up-modal').classList.contains('hidden') === false) {
         togglePause();
     }
+    // Level up menu keyboard controls (Arrow keys + Enter)
+    const modal = document.getElementById('level-up-modal');
+    if (modal && !modal.classList.contains('hidden')) {
+        console.log('Modal is visible, key pressed:', e.key);
+        const choices = document.querySelectorAll('#choices .level-up-option[data-choice-index]');
+        const rerollBtn = document.getElementById('reroll-btn');
+        // Check for treasure confirm button by ID
+        const confirmBtn = document.getElementById('treasure-confirm-btn');
+        
+        console.log('confirmBtn exists:', !!confirmBtn, 'choices.length:', choices.length);
+        
+        // Treasure reward screen: only handle Enter key to confirm
+        if (confirmBtn) {
+            if (e.key === 'Enter') {
+                e.preventDefault();
+                console.log('Enter pressed on treasure screen, clicking confirm button');
+                confirmBtn.click();
+            }
+            return;
+        }
+        
+        // Level up screen: handle arrow keys and Enter
+        const totalOptions = choices.length + (rerollBtn && !rerollBtn.disabled ? 1 : 0);
+        
+        if (totalOptions > 0) {
+            if (e.key === 'ArrowUp' || e.key === 'ArrowLeft') {
+                e.preventDefault();
+                selectedChoiceIndex = (selectedChoiceIndex - 1 + totalOptions) % totalOptions;
+                updateChoiceSelection();
+            } else if (e.key === 'ArrowDown' || e.key === 'ArrowRight') {
+                e.preventDefault();
+                selectedChoiceIndex = (selectedChoiceIndex + 1) % totalOptions;
+                updateChoiceSelection();
+            } else if (e.key === 'Enter') {
+                e.preventDefault();
+                // Check if reroll button is selected (last index)
+                if (selectedChoiceIndex === choices.length && rerollBtn && !rerollBtn.disabled) {
+                    rerollBtn.click();
+                } else if (selectedChoiceIndex < choices.length) {
+                    choices[selectedChoiceIndex].click();
+                }
+            }
+        }
+    }
 });
 window.addEventListener('keyup', e => { if (keys.hasOwnProperty(e.key)) keys[e.key] = false; });
+
+function updateChoiceSelection() {
+    const choices = document.querySelectorAll('#choices .level-up-option[data-choice-index]');
+    const rerollBtn = document.getElementById('reroll-btn');
+    const confirmBtn = document.getElementById('treasure-confirm-btn');
+    
+    // Update choice highlights
+    choices.forEach((choice, index) => {
+        if (index === selectedChoiceIndex) {
+            choice.style.background = '#555';
+            choice.style.transform = 'scale(1.02)';
+            choice.style.boxShadow = '0 0 15px rgba(255, 255, 255, 0.3)';
+        } else {
+            choice.style.background = '#333';
+            choice.style.transform = 'scale(1)';
+            choice.style.boxShadow = 'none';
+        }
+    });
+    
+    // Update reroll button highlight
+    if (rerollBtn && !rerollBtn.disabled) {
+        if (selectedChoiceIndex === choices.length) {
+            rerollBtn.style.background = '#555';
+            rerollBtn.style.transform = 'scale(1.05)';
+            rerollBtn.style.boxShadow = '0 0 15px rgba(255, 255, 255, 0.3)';
+        } else {
+            rerollBtn.style.background = '';
+            rerollBtn.style.transform = '';
+            rerollBtn.style.boxShadow = '';
+        }
+    }
+    
+    // Update confirm button highlight (treasure reward)
+    if (confirmBtn) {
+        const confirmIndex = choices.length + (rerollBtn && !rerollBtn.disabled ? 1 : 0);
+        if (selectedChoiceIndex === confirmIndex) {
+            confirmBtn.style.transform = 'scale(1.05)';
+            confirmBtn.style.boxShadow = '0 0 20px rgba(241, 196, 15, 0.6)';
+        } else {
+            confirmBtn.style.transform = 'scale(1)';
+            confirmBtn.style.boxShadow = '';
+        }
+    }
+}
 
 function updateUI() {
     if (!gameState.player) return;
@@ -1671,6 +1760,7 @@ function getRandomRarity(isWeapon) {
 
 function showLevelUpMenu() {
     gameState.isPaused = true; audioManager.playSFX('levelup');
+    selectedChoiceIndex = 0; // Reset selection to first option
     const modal = document.getElementById('level-up-modal'); const choicesDiv = document.getElementById('choices');
     choicesDiv.innerHTML = ''; modal.classList.remove('hidden'); const p = gameState.player;
 
@@ -1738,8 +1828,9 @@ function showLevelUpMenu() {
     }
     if (options.length === 0) options.push({ cat: 'label_skill', r: RARITIES.common, isNew: false, name: t("heal"), icon: "assets/heart.svg", action: () => { p.hp = Math.min(p.maxHp, p.hp + p.maxHp * 0.2); onChoiceMade(); } });
 
-    options.sort(() => 0.5 - Math.random()).slice(0, 3).forEach(opt => {
+    options.sort(() => 0.5 - Math.random()).slice(0, 3).forEach((opt, index) => {
         const btn = document.createElement('div'); btn.className = 'level-up-option'; btn.style.borderColor = opt.isNew ? '#ffffff' : opt.r.color;
+        btn.setAttribute('data-choice-index', index);
         const rarityText = opt.isNew ? '<span style="font-size:10px;font-weight:bold;color:#f1c40f;background:rgba(241,196,15,0.2);padding:2px 6px;border-radius:3px;">NEW</span>' : '<span style="font-size:10px;font-weight:bold;color:' + opt.r.color + '">' + t('rarity_' + opt.r.id) + '</span>';
         
         // Add evolution partner icon if available
@@ -1756,6 +1847,9 @@ function showLevelUpMenu() {
         btn.innerHTML = '<img src="' + opt.icon + '"><div style="flex-grow:1"><div style="display:flex; justify-content:space-between;"><span style="font-size:12px;color:#aaa;">' + t(opt.cat) + '</span>' + rarityText + '</div><div style="font-weight:bold;margin-top:2px;">' + opt.name + '</div>' + evolutionHtml + '</div>';
         btn.onclick = opt.action; choicesDiv.appendChild(btn);
     });
+    
+    // Initialize selection highlight
+    setTimeout(() => updateChoiceSelection(), 0);
 }
 
 window.rerollChoices = () => {
@@ -2282,6 +2376,9 @@ function showTreasureRewards(rewards) {
     choicesDiv.innerHTML = '';
     modal.classList.remove('hidden');
     
+    // Reset selection index to 0 for confirm button
+    selectedChoiceIndex = 0;
+    
     // Hide reroll button
     const rerollContainer = document.getElementById('reroll-container');
     if (rerollContainer) rerollContainer.classList.add('hidden');
@@ -2344,6 +2441,7 @@ function showTreasureRewards(rewards) {
     // Add continue button
     const continueBtn = document.createElement('div');
     continueBtn.className = 'level-up-option';
+    continueBtn.id = 'treasure-confirm-btn';
     continueBtn.style.cssText = 'background: #f1c40f; color: #000; border: 2px solid #f39c12; cursor: pointer; margin-top: 20px; justify-content: center;';
     continueBtn.innerHTML = '<div style="font-weight:bold; font-size:18px;">✓ 確認</div>';
     continueBtn.addEventListener('click', function() {
@@ -2351,6 +2449,9 @@ function showTreasureRewards(rewards) {
         closeTreasureReward(rewards);
     });
     choicesDiv.appendChild(continueBtn);
+    
+    // Initialize selection highlight on confirm button
+    setTimeout(() => updateChoiceSelection(), 0);
 }
 
 window.closeTreasureReward = (rewards) => {
