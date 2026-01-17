@@ -2659,7 +2659,7 @@ window.returnToTitle = () => {
     loopRunning = false;
     gameState.isPaused = false;
     document.getElementById('pause-modal').classList.add('hidden');
-    document.getElementById('title-screen').classList.remove('hidden');
+    document.getElementById('title-screen').classList.remove('hidden');3, 2.3
     audioManager.playSFX('click');
     location.reload();
 };
