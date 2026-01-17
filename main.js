@@ -27,16 +27,16 @@ function formatTime(s) {
 }
 
 const ENEMY_TYPES = [
-    { color: '#e74c3c', speed: 1.0, hp: 414, radius: 12, damage: 5, exp: 5 },    // 0-30s (×1.0)
-    { color: '#00d2d3', speed: 2.0, hp: 324, radius: 10, damage: 8, exp: 10 },    // 30-60s (×1.0)
-    { color: '#10ac84', speed: 0.6, hp: 2441, radius: 20, damage: 15, exp: 25 },  // 60-90s (×1.2)
-    { color: '#5f27cd', speed: 1.3, hp: 5832, radius: 15, damage: 20, exp: 100 },// 90-120s (×1.2)
-    { color: '#e67e22', speed: 1.5, hp: 4860, radius: 12, damage: 15, exp: 80 },  // 120-150s (×1.5)
-    { color: '#2980b9', speed: 1.8, hp: 12150, radius: 18, damage: 25, exp: 200 },// 150-180s (×1.5)
-    { color: '#2c3e50', speed: 0.8, hp: 40500, radius: 25, damage: 40, exp: 500 },// 180-210s (×2.0)
-    { color: '#ecf0f1', speed: 2.5, hp: 12168, radius: 15, damage: 30, exp: 300 },// 210-240s (×2.0)
-    { color: '#8e44ad', speed: 1.0, hp: 101250, radius: 40, damage: 50, exp: 1000 },// 240-270s (×2.5)
-    { color: '#c0392b', speed: 1.5, hp: 202500, radius: 20, damage: 60, exp: 2000 } // 270-300s (×2.5)
+    { color: '#e74c3c', speed: 1.0, hp: 300, radius: 12, damage: 3, exp: 5 },    // 0-30s
+    { color: '#00d2d3', speed: 2.0, hp: 250, radius: 10, damage: 5, exp: 10 },    // 30-60s
+    { color: '#10ac84', speed: 0.6, hp: 1200, radius: 20, damage: 8, exp: 25 },  // 60-90s
+    { color: '#5f27cd', speed: 1.3, hp: 2500, radius: 15, damage: 10, exp: 100 },// 90-120s
+    { color: '#e67e22', speed: 1.5, hp: 2000, radius: 12, damage: 10, exp: 80 },  // 120-150s
+    { color: '#2980b9', speed: 1.8, hp: 4500, radius: 18, damage: 12, exp: 200 },// 150-180s
+    { color: '#2c3e50', speed: 0.8, hp: 10000, radius: 25, damage: 15, exp: 500 },// 180-210s
+    { color: '#ecf0f1', speed: 2.5, hp: 5000, radius: 15, damage: 15, exp: 300 },// 210-240s
+    { color: '#8e44ad', speed: 1.0, hp: 20000, radius: 40, damage: 18, exp: 1000 },// 240-270s
+    { color: '#c0392b', speed: 1.5, hp: 35000, radius: 20, damage: 20, exp: 2000 } // 270-300s
 ];
 
 const BOSS_TYPES = {
@@ -1769,9 +1769,26 @@ function onChoiceMade() { document.getElementById('level-up-modal').classList.ad
 
 function spawnEnemy() { 
     const min = Math.min(9, Math.floor(gameTime / 30)); 
-    // Spawn 1.2x enemies (20% more)
+    
+    // Base spawn
     gameState.enemies.push(new Enemy(ENEMY_TYPES[min])); 
-    if (Math.random() < 0.2) {
+    
+    // Progressive spawn multiplier based on game time
+    let spawnMultiplier = 1;
+    if (gameTime >= 240) spawnMultiplier = 3; // 4-5 min: 4x total
+    else if (gameTime >= 180) spawnMultiplier = 2; // 3-4 min: 3x total
+    else if (gameTime >= 120) spawnMultiplier = 1.5; // 2-3 min: 2.5x total
+    else if (gameTime >= 60) spawnMultiplier = 1; // 1-2 min: 2x total
+    else spawnMultiplier = 0.2; // 0-1 min: 1.2x total
+    
+    // Spawn additional enemies based on multiplier
+    const additionalSpawns = Math.floor(spawnMultiplier);
+    for (let i = 0; i < additionalSpawns; i++) {
+        gameState.enemies.push(new Enemy(ENEMY_TYPES[min]));
+    }
+    
+    // Random additional spawn for fractional part
+    if (Math.random() < (spawnMultiplier % 1)) {
         gameState.enemies.push(new Enemy(ENEMY_TYPES[min]));
     }
 }
