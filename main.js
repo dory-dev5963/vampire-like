@@ -1768,10 +1768,19 @@ window.rerollChoices = () => {
 function onChoiceMade() { document.getElementById('level-up-modal').classList.add('hidden'); gameState.isPaused = false; lastTime = performance.now(); updateInventory(); }
 
 function spawnEnemy() { 
-    const min = Math.min(9, Math.floor(gameTime / 30)); 
+    // After 5 minutes, spawn all enemy types
+    let enemyType;
+    if (gameTime >= CLEAR_TIME) {
+        // Random enemy from all types
+        const randomIndex = Math.floor(Math.random() * ENEMY_TYPES.length);
+        enemyType = ENEMY_TYPES[randomIndex];
+    } else {
+        const min = Math.min(9, Math.floor(gameTime / 30)); 
+        enemyType = ENEMY_TYPES[min];
+    }
     
     // Base spawn
-    gameState.enemies.push(new Enemy(ENEMY_TYPES[min])); 
+    gameState.enemies.push(new Enemy(enemyType)); 
     
     // Progressive spawn multiplier based on game time
     let spawnMultiplier = 1;
@@ -1784,12 +1793,23 @@ function spawnEnemy() {
     // Spawn additional enemies based on multiplier
     const additionalSpawns = Math.floor(spawnMultiplier);
     for (let i = 0; i < additionalSpawns; i++) {
-        gameState.enemies.push(new Enemy(ENEMY_TYPES[min]));
+        // After 5 minutes, spawn random types for additional spawns too
+        if (gameTime >= CLEAR_TIME) {
+            const randomIndex = Math.floor(Math.random() * ENEMY_TYPES.length);
+            gameState.enemies.push(new Enemy(ENEMY_TYPES[randomIndex]));
+        } else {
+            gameState.enemies.push(new Enemy(enemyType));
+        }
     }
     
     // Random additional spawn for fractional part
     if (Math.random() < (spawnMultiplier % 1)) {
-        gameState.enemies.push(new Enemy(ENEMY_TYPES[min]));
+        if (gameTime >= CLEAR_TIME) {
+            const randomIndex = Math.floor(Math.random() * ENEMY_TYPES.length);
+            gameState.enemies.push(new Enemy(ENEMY_TYPES[randomIndex]));
+        } else {
+            gameState.enemies.push(new Enemy(enemyType));
+        }
     }
 }
 
@@ -2402,14 +2422,17 @@ function loop(timestamp) {
     const lastSpawnMinute = Math.floor(gameState.lastBossSpawnTime / 60);
     if (currentMinute > lastSpawnMinute && currentMinute > 0 && gameTime < CLEAR_TIME) {
         spawnBoss(false);
+        // Spawn 2 bosses at 3 and 4 minutes
+        if (currentMinute === 3 || currentMinute === 4) {
+            spawnBoss(false);
+        }
     }
     
     // Final boss spawn at clear time
     if (gameTime >= CLEAR_TIME && !gameState.finalBossSpawned) {
         gameState.finalBossSpawned = true;
         spawnBoss(true);
-        // Stop normal enemy spawning
-        nextSpawnTime = Infinity;
+        // Continue spawning normal enemies after 5 minutes with all types
     }
     
     if (gameTime > nextSpawnTime && gameTime < CLEAR_TIME) { spawnEnemy(); nextSpawnTime = gameTime + Math.max(0.2, 2.0 - (gameTime / 60)); }
